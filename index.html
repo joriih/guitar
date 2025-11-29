@@ -1307,7 +1307,7 @@
             const markerRow = document.createElement('div');
             markerRow.className = 'fretboard-row marker-row';
             markerRow.appendChild(document.createElement('div')).className = 'fret-0-cell';
-
+            container.appendChild(numberRow);
             for (let f = 1; f <= fretboardTotalFrets; f++) {
                 const numberCell = document.createElement('div');
                 numberCell.className = 'fret-cell';
@@ -1345,7 +1345,7 @@
                 container.appendChild(stringRow);
             }
             
-            container.appendChild(numberRow);
+            
             container.appendChild(markerRow);
         }
 
