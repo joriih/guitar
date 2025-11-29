@@ -1325,7 +1325,7 @@
                 markerRow.appendChild(markerCell);
             }
 
-            for (let s = 0; s < fretboardOpenStrings.length; s++) {
+            for (let s = fretboardOpenStrings.length -1; s >=0; s--) {
                 const stringRow = document.createElement('div');
                 stringRow.className = 'fretboard-row string-row';
 
@@ -1428,10 +1428,44 @@
             }
 
             getPatternTitle() {
+                // 1. 기본 정보 추출
+                const rootNote = this.rootNote;
+                const rootIndex = fretboardNoteIndices[rootNote];
                 const isScale = this.patternMode === 'scale';
-                const pattern = isScale ? this.scaleType : (this.chordType === 'Major' ? '' : this.chordType);
-                const type = isScale ? 'Scale' : 'Chord';
-                return this.rootNote + ' ' + pattern + (this.patternMode === 'free' ? ' (선택 음)' : ' ' + type);
+                const type = isScale ? this.scaleType : this.chordType;
+                
+                // 2. 인터벌 (간격) 목록 생성
+                const intervals = this.patternMode === 'free' ? 
+                    Array.from(this.selectedFreeNotes).map(note => (note - rootIndex + 12) % 12).sort((a,b) => a-b)
+                    : fretboardGetPatternIntervals(this.patternMode, type);
+
+                // 3. 패턴 이름 생성 (예: C Major Scale)
+                let baseName;
+                if (this.patternMode === 'free') {
+                    baseName = 'Free Note (선택 음)';
+                } else {
+                    const patternType = isScale ? type + ' Scale' : type + ' Chord';
+                    baseName = rootNote + ' ' + patternType;
+                }
+
+                // 4. 구성음 (Note Names) 문자열 생성
+                // (sharp/flat 규칙은 rootNote에 따라 결정됨)       
+                const useFlat = fretboardFlatRoots.includes(rootNote);
+                
+                const noteNames = intervals.map(interval => {
+                    const noteIndex = (rootIndex + interval) % 12;
+                    return useFlat ? fretboardFlatNoteNames[noteIndex] : fretboardSharpNoteNames[noteIndex];
+                });
+                
+                // 5. 도수 (Degree Names) 문자열 생성
+                const degreeNames = intervals.map(interval => {
+                    // fretboardGetPatternDegreeName 함수는 코드에 정의되어 있다고 가정합니다.
+                    return fretboardGetPatternDegreeName(interval, this.patternMode === 'scale' ? this.scaleType : this.chordType);
+                });
+
+                // 6. 요청된 최종 형식으로 조합: 패턴 정보 | 구성음 | 도수
+                return `${baseName} 🎸 ${noteNames.join('-')} (${degreeNames.join('-')})`;
+
             }
 
             generatePatternData() {
@@ -1782,7 +1816,7 @@
                     dotDiv.style.background = `linear-gradient(to right, ${gradientStops.join(', ')})`;
                     
                     // 텍스트 가독성을 위해 그림자 추가
-                    dotDiv.style.textShadow = '0 0 2px black';
+                    // dotDiv.style.textShadow = '0 0 2px black';
                 }
 
                 return dotDiv;
