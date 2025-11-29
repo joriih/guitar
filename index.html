@@ -2,32 +2,32 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>기타 뿌셔뿌셔</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>기타 뿌셔뿌셔 (Mobile Optimized)</title>
     <style>
         /* ========================================================= */
-        /* === 통합된 CSS 변수 (리듬 스테이션 기준 테마 + 지판 고유 변수) === */
+        /* === 통합된 CSS 변수 === */
         /* ========================================================= */
         :root {
-            /* 리듬 스테이션 기본 테마 변수 (Dark Mode Default) */
+            /* 리듬 스테이션 기본 테마 변수 */
             --bg-primary: #020e16; 
             --bg-panel: #1a1a3a; 
             --text-main: #f0f0f0; 
             --text-secondary: #aaaaaa; 
             --color-panel-border: #3c3c6e; 
             --color-input-bg: #2a2a4a; 
-            --color-accent: #87ceeb; /* Blue 테마 기본값 */
+            --color-accent: #87ceeb; 
             --color-highlight: #87ceeb; 
             --color-indicator: #dc3545; 
 
             /* 지판 시각화 고유 변수 */
-            --color-simple-other: #bbbbbb; 
+            --color-simple-other: #bbbbbb; /* 회색 (기타 음) */
             --color-divider: #cccccc; 
             
             --color-root-highlight: #ff0055; 
             --color-root-border: #ffffff;
             
-            /* [수정 4] 통합 지판 범례/분할을 위한 색상 (5가지) */
+            /* 통합 지판 범례/분할을 위한 색상 (5가지) */
             --color-p1: #FFB347; /* Pastel Orange */
             --color-p2: #87CEEB; /* Sky Blue */
             --color-p3: #77DD77; /* Pastel Green */
@@ -35,18 +35,19 @@
             --color-p5: #DDA0DD; /* Plum (Light Purple) */
             
             --fret-0-width: 40px; 
-            --fret-width: 60px; /* 수정 3: 스크롤 방지를 위해 폭 증가 (기존 55px) */
+            --fret-width: 60px;
             --dot-color: #ccc;
         }
 
-        /* === 색상 테마 정의 (리듬 스테이션) === */
+        /* === 색상 테마 정의 === */
         .theme-blue {
             --color-accent: #87ceeb; 
             --color-highlight: #87ceeb; 
             --color-indicator: #3567dc; 
         }
         .instance-title{ display: none;}
-        /* === Light Mode Overrides (리듬 스테이션) === */
+        
+        /* === Light Mode Overrides === */
         .light-mode {
             --bg-primary: #f0f0f5; 
             --bg-panel: #ffffff; 
@@ -57,7 +58,7 @@
         }
 
         /* ========================================================= */
-        /* === 리듬 스테이션 CSS 시작 === */
+        /* === 기본 스타일 === */
         /* ========================================================= */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -71,6 +72,7 @@
             margin: 0;
             box-sizing: border-box;
             transition: background-color 0.3s;
+            -webkit-tap-highlight-color: transparent; /* 모바일 탭 하이라이트 제거 */
         }
         .header {
             width: 100%;
@@ -112,7 +114,7 @@
             background-color: var(--color-accent); color: var(--bg-primary); 
             border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer;
             font-size: 1.1em;  transition: background-color 0.3s ease, opacity 0.2s;
-            width: 100%; margin-top: 10px;
+            width: 100%; margin-top: 10px; touch-action: manipulation;
         }
         button:hover { opacity: 0.9; }
         .metronome-toggle-container {
@@ -221,8 +223,17 @@
         .sub-beat.sub-beat-3 { width: 12px; height: 12px; border-radius: 50%; background-color: var(--text-secondary); }
         .sub-beat.sub-beat-3.active { background-color: var(--color-indicator); }
         .sub-beat.current-16th { outline: 3px solid var(--color-indicator); outline-offset: 1px; }
-        .sub-beat.downbeat-16th { width: 22px; height: 22px; border-radius: 6px; }
+        
+        .sub-beat.downbeat-16th { 
+            width: 22px; 
+            height: 22px; 
+            border-radius: 6px; 
+            background-color: var(--color-panel-border); 
+        }
         .sub-beat.downbeat-16th.sub-beat-3 { width: 16px; height: 16px; border-radius: 50%; }
+        .sub-beat.downbeat-16th.active { background-color: var(--color-accent); }
+        .sub-beat.downbeat-16th.sub-beat-3.active { background-color: var(--color-indicator); }
+
         .beat-marker {
             width: 100%; text-align: center; font-size: 0.9em;
             color: var(--text-secondary); margin-bottom: 5px; font-weight: bold;
@@ -391,6 +402,8 @@
             color: white; 
             z-index: 20;
         }
+        
+        /* [수정] 기본 회색 스타일 정의 (자바스크립트에서 이 클래스를 사용하도록 수정됨) */
         .note-dot.simple-other {
             background-color: var(--color-simple-other); 
             border: none; 
@@ -443,66 +456,55 @@
         #fretboard-add-full-btn:hover { opacity: 0.9; }
 
         /* ========================================================= */
-        /* === RESPONSIVE DESIGN (반응형 추가 및 레이아웃 수정) === */
+        /* === RESPONSIVE DESIGN === */
         /* ========================================================= */
         
         @media (max-width: 768px) {
-            /* 1. 기본 레이아웃 및 여백 최적화 */
             body { padding: 10px; }
             .header { margin-bottom: 20px; }
             h1 { font-size: 1.6em; }
 
-            /* [수정 5] 리듬 스테이션 수직 정렬 강제 (한 줄 배치) */
             .top-container {
-                flex-direction: column; /* 세로 배치 */
-                gap: 15px; /* 패널 사이 간격 축소 */
+                flex-direction: column; 
+                gap: 15px; 
                 align-items: stretch;
             }
             
-            /* 패널들이 작은 화면에서 꽉 차게, 여백 줄이기 */
             .panel, .pattern-panel, .fretboard-instance {
                 width: 100%;
                 min-width: 0;
-                padding: 15px; /* 내부 여백 축소 (기존 25px -> 15px) */
+                padding: 15px; 
                 box-sizing: border-box;
-                margin-bottom: 0; /* top-container의 gap으로 제어 */
+                margin-bottom: 0; 
             }
 
-            /* [수정 5] 폰트 크기 다이어트 (모바일 최적화) */
-            h2 { font-size: 1.25em; margin-bottom: 15px; } /* 제목 크기 축소 */
+            h2 { font-size: 1.25em; margin-bottom: 15px; } 
             
             button {
-                font-size: 1em; /* 버튼 글자 크기 축소 */
-                padding: 10px 15px; /* 버튼 패딩 축소 */
+                font-size: 1em; 
+                padding: 10px 15px; 
             }
             
-            .bpm-input-group input {
-                font-size: 1.2em; /* BPM 숫자 크기 약간 축소 */
-            }
+            .bpm-input-group input { font-size: 1.2em; }
             
-            .metronome-toggle-label, .swing-text-label, .swing-percent {
-                font-size: 0.9em;
-            }
+            .metronome-toggle-label, .swing-text-label, .swing-percent { font-size: 0.9em; }
             
             label { font-size: 0.9em; }
             .meter-select { font-size: 0.95em; padding: 8px; }
 
-            /* 2. 리듬 스테이션 세부 반응형 */
             .pattern-display {
                 margin: 10px 0;
                 padding-bottom: 5px;
             }
             .sub-beat {
-                width: 16px; height: 16px; /* 터치 타겟 유지 */
+                width: 16px; height: 16px; 
             }
             
-            /* 3. 기타 지판 반응형 (가로 스크롤 허용) */
             .fretboard-display {
                 overflow-x: auto !important; 
                 -webkit-overflow-scrolling: touch; 
             }
             
-            /* 헤더의 버튼들이 타이틀과 겹치지 않도록 조정 */
             .fretboard-instance {
                 display: flex;
                 flex-direction: column;
@@ -512,7 +514,7 @@
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 10px;
-                margin-top: 35px; /* 상단 버튼 공간 확보 */
+                margin-top: 35px; 
             }
             .instance-header h2 { font-size: 1.3em; }
             
@@ -529,7 +531,7 @@
             .button-group button {
                 padding: 8px 10px;
                 font-size: 0.85em;
-                flex-grow: 1; /* 버튼들이 꽉 차게 */
+                flex-grow: 1; 
                 justify-content: center;
                 display: flex;
             }
@@ -542,7 +544,6 @@
             .slider-text-labels span { font-size: 0.75em; }
         }
 
-        /* 아이폰 미니 등 초소형 화면 (375px 이하) 대응 */
         @media (max-width: 380px) {
             h1 { font-size: 1.4em; }
             .header-action-buttons button {
@@ -661,7 +662,7 @@
                 </div>
             </div>
             <div class="pattern-info">
-                <strong>설명:</strong> <span>위의 모든 입력 지판이 합쳐져서 보입니다. (수직 분할로 각 지판 색상 표시)</span>
+                <strong>설명:</strong> <span>위의 모든 입력 지판이 합쳐져서 보입니다. (다중 소스는 그라데이션으로 표시)</span>
             </div>
             <div id="combined-fretboard-display" class="fretboard-display">
             </div>
@@ -680,6 +681,14 @@
             <hr class="fretboard-title-separator">
 
             <div class="fretboard-controls-panel">
+                <div class="setting-item">
+                    <label style="font-weight: bold;">색상 표시 모드:</label>
+                    <div class="button-group color-mode-buttons">
+                        <button class="color-mode-btn active" data-mode="simple">루트/기타(2색)</button>
+                        <button class="color-mode-btn" data-mode="individual">무지개(개별)</button>
+                    </div>
+                </div>
+
                 <div class="setting-item">
                     <label style="font-weight: bold;">패턴 모드 선택:</label>
                     <div class="button-group mode-type-buttons">
@@ -783,8 +792,8 @@
                 <hr class="fretboard-title-separator" style="margin-top: 20px;">
                 
                 <div class="setting-item">
-                    <label style="font-weight: bold;">표시 모드:</label>
-                    <div class="button-group color-mode-buttons">
+                    <label style="font-weight: bold;">표시 텍스트 모드:</label>
+                    <div class="button-group display-mode-buttons">
                         <button class="display-mode-btn active" data-mode="note">음이름</button>
                         <button class="display-mode-btn" data-mode="degree">음정(도수)</button>
                     </div>
@@ -845,31 +854,62 @@
         let rhythmAddHighlightSchedule = [];
         let rhythmRemoveHighlightSchedule = [];
         
-        // **[수정 2] Tap Tempo 변수 추가**
-        let rhythmTapTimes = []; // 탭 시간 기록을 위한 배열 추가
-        const rhythmTapTimeMax = 4; // 최근 4개의 탭을 기준으로 평균 BPM 계산
+        // Tap Tempo 변수
+        let rhythmTapTimes = []; 
+        const rhythmTapTimeMax = 4; 
 
         function rhythmInitAudio() {
-            if (rhythmAudioContextInitialized) return;
+            if (rhythmAudioContextInitialized) {
+                if (rhythmAudioContext && rhythmAudioContext.state === 'suspended') {
+                    rhythmAudioContext.resume().catch(e => console.error("AudioContext resume failed:", e));
+                }
+                return;
+            }
+            
             rhythmAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            if (rhythmAudioContext.state === 'suspended') {
+                rhythmAudioContext.resume().catch(e => console.error("Initial AudioContext resume failed:", e));
+            }
+
             rhythmMetronomeOscillator = rhythmAudioContext.createOscillator();
             rhythmMetronomeOscillator.type = 'square';
             rhythmMetronomeOscillator.frequency.setValueAtTime(440, 0);
             rhythmMetronomeOscillator.start(0);
+            
             rhythmMetronomeGain = rhythmAudioContext.createGain();
             rhythmMetronomeGain.gain.setValueAtTime(0, 0);
+            
             rhythmMetronomeOscillator.connect(rhythmMetronomeGain);
             rhythmMetronomeGain.connect(rhythmAudioContext.destination);
             rhythmAudioContextInitialized = true;
         }
-
-        function rhythmScheduler() {
+        
+        function rhythmPlaySound(time, frequency, volume) {
             if (!rhythmAudioContextInitialized) return;
 
-            // ... (기존 rhythmScheduler 로직 유지)
+            const oscillator = rhythmAudioContext.createOscillator();
+            const gainNode = rhythmAudioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(rhythmAudioContext.destination);
+
+            oscillator.frequency.setValueAtTime(frequency, time);
+            gainNode.gain.setValueAtTime(volume, time);
+            
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, time + 0.03); 
+
+            oscillator.start(time);
+            oscillator.stop(time + 0.03); 
+        }
+
+        function rhythmScheduler() {
+            if (!rhythmAudioContextInitialized || !rhythmIsPlaying) return;
+
             while (rhythmNextNoteTime < rhythmAudioContext.currentTime + rhythmScheduleAheadTime) {
                 const secondsPerBeat = 60.0 / rhythmBPM;
                 rhythmScheduleNote(rhythmCurrentBeat, rhythmNextNoteTime);
+                
                 rhythmNextNoteTime += secondsPerBeat;
                 rhythmCurrentBeat = (rhythmCurrentBeat + 1) % rhythmBeatsPerMeasure;
             }
@@ -892,64 +932,87 @@
         function rhythmScheduleNote(beatNumber, scheduledTime) {
             if (!rhythmAudioContextInitialized) return;
             
-            // ... (기존 rhythmScheduleNote 로직 유지)
             const secondsPerBeat = 60.0 / rhythmBPM;
             const subBeatDuration = secondsPerBeat / rhythmSubdivision;
             const measureIndex = beatNumber * rhythmSubdivision;
-            const timeDifference = rhythmAudioContext.currentTime - scheduledTime;
             
-            let highlightIndex = measureIndex;
-
             for (let i = 0; i < rhythmSubdivision; i++) {
                 const patternIndex = measureIndex + i;
+                const isBeatOne = (beatNumber === 0 && i === 0); 
                 const isDownBeat = (i === 0); 
-
-                // Swing logic
+                
                 let timeOffset = 0;
                 if (rhythmSwingAmount > 0 && rhythmSubdivision === 4) {
-                    if (i % 2 !== 0) { // Off-beats (8th notes)
-                        const swingRatio = rhythmSwingAmount / 100.0; // 0 to 1
-                        const swingFactor = 2 * (1 - swingRatio); // 2(1 - R)
-                        const straightDuration = secondsPerBeat / 2; // 8th note duration
+                    if (i % 2 !== 0) { 
+                        const swingRatio = rhythmSwingAmount / 100.0; 
+                        const swingFactor = 2 * (1 - swingRatio); 
+                        const straightDuration = secondsPerBeat / 2; 
                         timeOffset = straightDuration * (swingFactor - 1);
                     }
                 }
 
                 const subBeatTime = scheduledTime + (i * subBeatDuration) + timeOffset;
 
-                // Play sound if pattern or metronome is active
                 const isPatternActive = rhythmPattern[patternIndex % rhythmPattern.length];
-                const isMetronomeActive = rhythmIsMetronomeAlwaysOn && isDownBeat;
+                
+                if (isPatternActive || (rhythmIsMetronomeAlwaysOn && isDownBeat)) {
+                    // [수정된 로직]
+                    // 1. frequency와 volume 변수를 선언만 하고, 초기값은 아래 if/else 블록에서 설정합니다.
+                    let frequency; 
+                    let volume;
 
-                if (isPatternActive || isMetronomeActive) {
-                    if (rhythmMetronomeGain) {
-                        rhythmMetronomeGain.gain.setValueAtTime(1, subBeatTime);
-                        rhythmMetronomeGain.gain.exponentialRampToValueAtTime(0.001, subBeatTime + 0.02); 
+                    if (isPatternActive) {
+                        // 2. 패턴이 활성화 된 경우 (패턴 소리가 우선)
+                        if (isDownBeat) {
+                            // 정박(Downbeat: 1, 2, 3, 4)이 활성화 됨 -> 강한 소리 (첫 박 소리처럼)
+                            frequency = 700; 
+                            volume = 1.0;
+                        } else {
+                            // 엇박(Off-beat)이 활성화 됨 -> 낮은 소리 (베이스 킥 느낌)
+                            frequency = 220;
+                            volume = 0.5;
+                        }
+                    } else {
+                        // 패턴 비활성화 상태 (메트로놈만 들릴 때)
+                        if (isBeatOne) {
+                            // 🎶 요청 사항 반영: 첫 박이 패턴 비활성화 상태이면 낮은 소리 (220Hz)
+                            frequency = 220; 
+                        } else {
+                            // 그 외 정박 (2, 3, 4)은 기본 메트로놈 소리 (440Hz)
+                            frequency = 440;
+                        }
+                        volume = 0.8; // 기본 메트로놈 볼륨
                     }
+                    
+                    rhythmPlaySound(subBeatTime, frequency, volume);
                 }
                 
-                // Highlight schedule
                 rhythmAddHighlightSchedule.push({ time: subBeatTime, index: patternIndex % rhythmPattern.length });
                 rhythmRemoveHighlightSchedule.push({ time: subBeatTime + subBeatDuration, index: patternIndex % rhythmPattern.length });
             }
-
-            // ... (기존 rhythmScheduleNote 로직 유지)
         }
 
         function rhythmGenerateRhythm() {
-            // ... (기존 rhythmGenerateRhythm 로직 유지)
             rhythmSyncopationLevel = parseInt(rhythmSyncopationRange.value);
             rhythmDifficultyLevel = parseInt(rhythmDifficultyRange.value);
             const total16thNotes = rhythmBeatsPerMeasure * rhythmSubdivision;
             rhythmPattern = new Array(total16thNotes).fill(0);
 
-            // ... (리듬 생성 로직)
+            for(let i=0; i < total16thNotes; i++) {
+                 if (i % rhythmSubdivision === 0) { 
+                    rhythmPattern[i] = 1;
+                 } else { 
+                    if (Math.random() < rhythmSyncopationLevel * 0.05 + rhythmDifficultyLevel * 0.02) {
+                        rhythmPattern[i] = 1;
+                    }
+                 }
+            }
 
             rhythmDisplayPattern(rhythmPattern);
+            rhythmInitAudio(); 
         }
 
         function rhythmTogglePlayPause() {
-            // **[수정 1] 모바일 Audio Context 활성화**
             rhythmInitAudio(); 
             if (rhythmAudioContext.state === 'suspended') rhythmAudioContext.resume();
             
@@ -957,7 +1020,6 @@
                 window.clearTimeout(rhythmTimerId);
                 rhythmIsPlaying = false;
                 rhythmPlayPauseBtn.textContent = "▶ Play";
-                if (rhythmMetronomeGain) rhythmMetronomeGain.gain.setValueAtTime(0, rhythmAudioContext.currentTime);
                 rhythmRemoveAllHighlights();
                 rhythmAddHighlightSchedule = [];
                 rhythmRemoveHighlightSchedule = [];
@@ -975,18 +1037,15 @@
             rhythmBPMInput.value = rhythmBPM;
         }
 
-        // **[수정 3] BPM 증감 폭 1로 변경**
         function rhythmIncreaseBPM() { rhythmUpdateBPM(rhythmBPM + 1); }
         function rhythmDecreaseBPM() { rhythmUpdateBPM(rhythmBPM - 1); }
 
-        // **[수정 2] Tap Tempo 로직 구현**
         function rhythmHandleTapTempo() {
-            rhythmInitAudio(); // 탭 시에도 Audio Context 초기화/재개 시도
-            
-            // AudioContext time을 사용하여 정확도 높임
-            const now = rhythmAudioContext.currentTime * 1000; // 밀리초 단위로 현재 시간
+            rhythmInitAudio(); 
+            if (rhythmAudioContext.state === 'suspended') rhythmAudioContext.resume();
 
-            // 2초 이상 간격이면 배열 초기화 및 현재 탭만 저장
+            const now = rhythmAudioContext.currentTime * 1000; 
+
             if (rhythmTapTimes.length > 0 && (now - rhythmTapTimes[rhythmTapTimes.length - 1] > 2000)) {
                 rhythmTapTimes = [now];
                 return;
@@ -995,7 +1054,7 @@
             rhythmTapTimes.push(now);
 
             if (rhythmTapTimes.length > rhythmTapTimeMax) {
-                rhythmTapTimes.shift(); // 4개 초과 시 가장 오래된 탭 제거
+                rhythmTapTimes.shift(); 
             }
 
             if (rhythmTapTimes.length >= 2) {
@@ -1004,17 +1063,13 @@
                     intervals.push(rhythmTapTimes[i] - rhythmTapTimes[i-1]);
                 }
                 
-                // 평균 인터벌 계산
                 const averageInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-                
-                // BPM 계산 (60000ms / averageInterval)
                 const newBPM = Math.round(60000 / averageInterval);
                 rhythmUpdateBPM(newBPM);
             }
         }
 
         function rhythmHandleSwingSelection(value) {
-            // ... (기존 rhythmHandleSwingSelection 로직 유지)
             rhythmSwingAmount = Math.max(0, Math.min(100, parseInt(value)));
             rhythmSwingRange.value = rhythmSwingAmount;
             rhythmSwingPercentValue.textContent = `${rhythmSwingAmount}%`;
@@ -1025,26 +1080,22 @@
         }
 
         function rhythmHandleSwingButtonEvent(e) {
-            // ... (기존 rhythmHandleSwingButtonEvent 로직 유지)
             const btn = e.target.closest('.swing-btn');
             if (btn) rhythmHandleSwingSelection(btn.dataset.swingValue);
         }
 
         function rhythmHandleSwingSliderEvent(e) {
-            // ... (기존 rhythmHandleSwingSliderEvent 로직 유지)
             rhythmHandleSwingSelection(e.target.value);
         }
 
         function rhythmRemoveAllHighlights() {
-            // ... (기존 rhythmRemoveAllHighlights 로직 유지)
             document.querySelectorAll('.sub-beat').forEach(b => b.classList.remove('current-16th'));
             document.querySelectorAll('.beat-group').forEach(b => b.classList.remove('highlight-current-beat'));
         }
 
         function rhythmDisplayPattern(pattern) {
-            // ... (기존 rhythmDisplayPattern 로직 유지)
             rhythmPatternDisplay.innerHTML = '';
-            // 박자(rhythmBeatsPerMeasure) 단위로 나누어 표시
+            
             for (let i = 0; i < rhythmBeatsPerMeasure; i++) {
                 const beatGroup = document.createElement('div');
                 beatGroup.className = 'beat-group';
@@ -1062,15 +1113,30 @@
                     const patternIndex = (i * rhythmSubdivision) + j;
                     const subBeat = document.createElement('div');
                     subBeat.className = `sub-beat ${rhythmSubdivision === 3 ? 'sub-beat-3' : ''}`;
+                    
+                    if (j === 0) { 
+                        subBeat.classList.add('downbeat-16th');
+                    }
+                    
                     subBeat.dataset.subBeatIndex = patternIndex;
                     subBeat.dataset.beat = i + 1;
                     subBeat.dataset.sub = j + 1;
                     if (pattern[patternIndex] === 1) subBeat.classList.add('active');
                     
                     subBeat.addEventListener('click', () => {
+                        rhythmInitAudio(); 
+                        if (rhythmAudioContext.state === 'suspended') rhythmAudioContext.resume();
+                        
                         pattern[patternIndex] = pattern[patternIndex] === 1 ? 0 : 1;
                         subBeat.classList.toggle('active');
                     });
+                    
+                    subBeat.addEventListener('touchstart', (e) => {
+                        e.preventDefault(); 
+                        rhythmInitAudio(); 
+                        if (rhythmAudioContext.state === 'suspended') rhythmAudioContext.resume();
+                    });
+
                     subdivisionGroup.appendChild(subBeat);
                 }
                 beatGroup.appendChild(subdivisionGroup);
@@ -1079,7 +1145,6 @@
         }
 
         function rhythmUpdateTheme(selectedTheme, selectedMode) {
-            // ... (기존 rhythmUpdateTheme 로직 유지)
             const body = document.body;
             body.classList.remove('dark-mode', 'light-mode');
             body.classList.remove('theme-blue');
@@ -1088,17 +1153,26 @@
             else body.classList.add('dark-mode');
         }
 
-        // Event Listeners (수정 1, 2, 3 반영)
+        // Event Listeners (모바일 오디오를 위해 touchstart 추가)
         rhythmPlayPauseBtn.addEventListener('click', rhythmTogglePlayPause);
+        rhythmPlayPauseBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault(); 
+            rhythmTogglePlayPause();
+        });
+
         rhythmBPMIncreaseBtn.addEventListener('click', rhythmIncreaseBPM);
         rhythmBPMDecreaseBtn.addEventListener('click', rhythmDecreaseBPM);
         
         rhythmGenerateBtn.addEventListener('click', () => {
-            rhythmInitAudio(); // **[수정 1]**
+            rhythmInitAudio();
+            if (rhythmAudioContext && rhythmAudioContext.state === 'suspended') rhythmAudioContext.resume();
             rhythmGenerateRhythm();
         });
+        rhythmGenerateBtn.addEventListener('touchstart', () => {
+             rhythmInitAudio();
+             if (rhythmAudioContext && rhythmAudioContext.state === 'suspended') rhythmAudioContext.resume();
+        });
         
-        // **[수정 2] Tap Tempo 모바일 터치 대응 추가**
         rhythmTapTempoBtn.addEventListener('click', rhythmHandleTapTempo);
         rhythmTapTempoBtn.addEventListener('touchstart', (e) => {
             e.preventDefault(); 
@@ -1107,7 +1181,7 @@
 
         rhythmMetronomeToggle.addEventListener('change', (e) => {
             rhythmIsMetronomeAlwaysOn = e.target.checked;
-            rhythmInitAudio(); // **[수정 1]**
+            rhythmInitAudio(); 
         });
 
         rhythmBPMInput.addEventListener('change', (e) => {
@@ -1116,7 +1190,7 @@
                 rhythmTogglePlayPause();
                 rhythmTogglePlayPause();
             }
-            rhythmInitAudio(); // **[수정 1]**
+            rhythmInitAudio(); 
         });
 
         rhythmSwingButtonsContainer.addEventListener('click', rhythmHandleSwingButtonEvent);
@@ -1139,28 +1213,33 @@
             document.getElementById('rhythm-difficulty-value').textContent = e.target.value;
         });
 
-        // Fretboard Variables and Constants
+        // =========================================================
+        // === FRETBOARD VISUALIZER ===
+        // =========================================================
+
         const fretboardTotalFrets = 24; 
-        const fretboardOpenStrings = [4, 9, 2, 7, 11, 4]; // E A D G B E (MIDI note 40: E2)
+        const fretboardOpenStrings = [4, 9, 2, 7, 11, 4]; // E A D G B E
         const fretboardSharpNoteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
         const fretboardFlatNoteNames = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
         const fretboardNoteIndices = { "C": 0, "C#": 1, "Db": 1, "D": 2, "D#": 3, "Eb": 3, "E": 4, "F": 5, "F#": 6, "Gb": 6, "G": 7, "G#": 8, "Ab": 8, "A": 9, "A#": 10, "Bb": 10, "B": 11 };
-        const fretboardFlatRoots = ["Db", "Eb", "Gb", "Ab", "Bb", "F"]; // 플랫 표기를 선호하는 근음
-        
-        const fretboardDegreeColors = { 
-            1: '--color-root-highlight', // R
-            2: '--color-p1', // 2, 9
-            3: '--color-p2', // 3
-            4: '--color-p3', // 4, 11
-            5: '--color-p4', // 5
-            6: '--color-p5', // 6, 13
-            7: '--color-p2', // 7
-            // Diminished/Augmented
-            'b2': '--color-p1', 
-            '#4/b5': '--color-p3', 
-            'b6': '--color-p4', 
-            'b7': '--color-p5' 
+        const fretboardFlatRoots = ["Db", "Eb", "Gb", "Ab", "Bb", "F"]; 
+
+        // 파스텔톤 개별 음 색상 (Pastel Tones for 'individual' mode)
+        const fretboardNoteColors = {
+            0: "#ADD8E6", // C - Light Blue
+            1: "#B0E0E6", // C#/Db - Powder Blue
+            2: "#F0E68C", // D - Light Khaki
+            3: "#F8F8FF", // D#/Eb - Ghost White
+            4: "#98FB98", // E - Pale Green
+            5: "#DDA0DD", // F - Plum
+            6: "#FFDAB9", // F#/Gb - Peach Puff
+            7: "#FFB347", // G - Pastel Orange
+            8: "#FF6961", // G#/Ab - Light Coral
+            9: "#FFC0CB", // A - Pink
+            10: "#AEC6E6", // A#/Bb - Light Blue
+            11: "#C6AEC7"  // B - Pastel Lavender
         };
+        
         const fretboardFunctionalDegreeNames = { 
             0: "R", 1: "b2", 2: "2", 3: "b3", 4: "3", 5: "4", 6: "#4/b5", 7: "5", 8: "b6", 9: "6", 10: "b7", 11: "7" 
         };
@@ -1208,9 +1287,8 @@
         }
 
         function fretboardGetPatternDegreeName(interval, patternType) {
-            // ... (기존 fretboardGetPatternDegreeName 로직 유지)
-            if (patternType.includes("Major") && interval === 11) return "7"; // M7
-            if (patternType.includes("Minor") && interval === 10) return "b7"; // m7
+            if (patternType.includes("Major") && interval === 11) return "7"; 
+            if (patternType.includes("Minor") && interval === 10) return "b7"; 
             if (interval === 1) return "b2";
             if (interval === 3) return "b3";
             if (interval === 6) return "#4/b5";
@@ -1220,7 +1298,6 @@
         }
 
         function renderFretboardGrid(container, getDotContentCallback) {
-            // ... (기존 renderFretboardGrid 로직 유지)
             // 1. Number Row
             const numberRow = document.createElement('div');
             numberRow.className = 'fretboard-row number-row';
@@ -1232,7 +1309,6 @@
             markerRow.appendChild(document.createElement('div')).className = 'fret-0-cell';
 
             for (let f = 1; f <= fretboardTotalFrets; f++) {
-                // [수정 4] fretboardTotalFrets에 맞춰 24프렛까지 렌더링
                 const numberCell = document.createElement('div');
                 numberCell.className = 'fret-cell';
                 numberCell.textContent = f;
@@ -1241,7 +1317,7 @@
                 const markerCell = document.createElement('div');
                 markerCell.className = 'fret-cell marker-cell';
                 if ([3,5,7,9,15,17,19,21].includes(f)) markerCell.appendChild(document.createElement('div')).className = 'fret-marker-dot';
-                else if ([12,24].includes(f)) { // 24프렛 마커 처리
+                else if ([12,24].includes(f)) { 
                     markerCell.classList.add('double-marker');
                     markerCell.appendChild(document.createElement('div')).className = 'fret-marker-dot';
                     markerCell.appendChild(document.createElement('div')).className = 'fret-marker-dot';
@@ -1249,7 +1325,6 @@
                 markerRow.appendChild(markerCell);
             }
 
-            // [수정 3] String Rows 먼저 렌더링
             for (let s = 0; s < fretboardOpenStrings.length; s++) {
                 const stringRow = document.createElement('div');
                 stringRow.className = 'fretboard-row string-row';
@@ -1261,7 +1336,6 @@
                 stringRow.appendChild(fret0Cell);
 
                 for (let f = 1; f <= fretboardTotalFrets; f++) {
-                    // [수정 4] fretboardTotalFrets에 맞춰 24프렛까지 렌더링
                     dotDiv = getDotContentCallback(s, f);
                     const fretCell = document.createElement('div');
                     fretCell.className = 'fret-cell fret-space';
@@ -1271,7 +1345,6 @@
                 container.appendChild(stringRow);
             }
             
-            // [수정 3] Marker Row와 Number Row를 가장 아래에 배치
             container.appendChild(numberRow);
             container.appendChild(markerRow);
         }
@@ -1279,13 +1352,13 @@
         // [FRETBOARD] CLASS DEFINITION
         class FretboardInstance {
             constructor(id) {
-                // ... (생성자 로직 유지)
                 this.id = id;
                 this.patternMode = 'scale';
                 this.scaleType = 'Major';
                 this.chordType = 'Major';
                 this.rootNote = 'C';
                 this.displayMode = 'note';
+                this.colorMode = 'simple'; // Default color mode
                 this.selectedFreeNotes = new Set();
                 
                 this.rootElement = fretboardTemplate.content.cloneNode(true).querySelector('.fretboard-instance');
@@ -1296,17 +1369,24 @@
                     instanceTitle: this.rootElement.querySelector('.instance-title'),
                     removeBtn: this.rootElement.querySelector('.remove-fretboard-btn'),
                     toggleCompactBtn: this.rootElement.querySelector('.toggle-compact-btn'),
+                    
+                    colorModeButtons: this.rootElement.querySelector('.color-mode-buttons'),
                     modeTypeButtons: this.rootElement.querySelector('.mode-type-buttons'),
+                    displayModeButtons: this.rootElement.querySelector('.display-mode-buttons'),
+
                     scaleControls: this.rootElement.querySelector('.scale-controls'),
                     chordControls: this.rootElement.querySelector('.chord-controls'),
                     freeNoteControls: this.rootElement.querySelector('.free-note-controls'),
+                    
                     scaleRootNoteButtons: this.rootElement.querySelector('.scale-controls .root-note-buttons'),
                     scaleTypeButtons: this.rootElement.querySelector('.scale-type-buttons'),
+                    
                     chordRootNoteButtons: this.rootElement.querySelector('.chord-controls .root-note-buttons'),
                     chordTypeButtons: this.rootElement.querySelector('.chord-type-buttons'),
+                    
                     freeNoteButtonsContainer: this.rootElement.querySelector('.free-note-buttons'),
                     clearFreeNotesBtn: this.rootElement.querySelector('.clear-free-notes-btn'),
-                    displayModeButtons: this.rootElement.querySelector('.color-mode-buttons'),
+                    
                     patternInfoSpan: this.rootElement.querySelector('.pattern-info-span'),
                     fretboardDisplay: this.rootElement.querySelector('.fretboard-display'),
                 };
@@ -1319,13 +1399,11 @@
             }
 
             setupInitialState() {
-                // ... (기존 setupInitialState 로직 유지)
                 this.renderFreeNoteButtons();
                 this.renderCurrentPattern();
             }
 
             toggleCompactMode(shouldCompact) {
-                // ... (기존 toggleCompactMode 로직 유지)
                 if (shouldCompact) {
                     this.dom.root.classList.add('compact-mode');
                     this.dom.toggleCompactBtn.textContent = 'Expand';
@@ -1336,7 +1414,6 @@
             }
 
             renderFreeNoteButtons() {
-                // ... (기존 renderFreeNoteButtons 로직 유지)
                 const container = this.dom.freeNoteButtonsContainer;
                 container.innerHTML = '';
                 for (let i = 0; i < 12; i++) {
@@ -1351,7 +1428,6 @@
             }
 
             getPatternTitle() {
-                // ... (기존 getPatternTitle 로직 유지)
                 const isScale = this.patternMode === 'scale';
                 const pattern = isScale ? this.scaleType : (this.chordType === 'Major' ? '' : this.chordType);
                 const type = isScale ? 'Scale' : 'Chord';
@@ -1359,7 +1435,6 @@
             }
 
             generatePatternData() {
-                // ... (기존 generatePatternData 로직 유지)
                 const isScale = this.patternMode === 'scale';
                 const type = isScale ? this.scaleType : this.chordType;
                 return {
@@ -1374,7 +1449,6 @@
             }
 
             getNoteLabelAndClass(noteIndex, patternIntervals) {
-                // ... (기존 getNoteLabelAndClass 로직 유지)
                 const rootIndex = fretboardNoteIndices[this.rootNote];
                 let interval = (noteIndex - rootIndex + 12) % 12;
                 let label, cssClass = '';
@@ -1387,9 +1461,10 @@
                     else label = fretboardGetPatternDegreeName(interval, this.patternMode === 'scale' ? this.scaleType : this.chordType);
                 }
 
+                // [수정] 기타 음을 simple-other 클래스로 매핑하여 CSS 변수 색상 적용
                 if (interval === 0 && this.patternMode !== 'free') cssClass = 'root';
-                else if (patternIntervals.includes(interval)) cssClass = 'other-note';
-                else if (this.patternMode === 'free' && this.selectedFreeNotes.has(noteIndex)) cssClass = 'other-note';
+                else if (patternIntervals.includes(interval)) cssClass = 'simple-other';
+                else if (this.patternMode === 'free' && this.selectedFreeNotes.has(noteIndex)) cssClass = 'simple-other';
                 else {
                     cssClass = 'free-note';
                     label = this.displayMode === 'note' ? label : '';
@@ -1397,11 +1472,10 @@
 
                 if (this.patternMode !== 'free' && !patternIntervals.includes(interval)) label = '';
 
-                return { label: label, cssClass: cssClass };
+                return { label: label, cssClass: cssClass, interval: interval };
             }
 
             renderCurrentPattern() {
-                // ... (기존 renderCurrentPattern 로직 유지)
                 const data = this.generatePatternData();
                 this.dom.patternInfoSpan.textContent = this.getPatternTitle();
                 this.dom.fretboardDisplay.innerHTML = '';
@@ -1417,9 +1491,25 @@
                     }
 
                     if (hasNote) {
-                        const { label, cssClass } = this.getNoteLabelAndClass(noteIndex, data.intervals);
+                        const { label, cssClass, interval } = this.getNoteLabelAndClass(noteIndex, data.intervals);
                         const dot = document.createElement('div');
-                        dot.className = `note-dot ${cssClass}`;
+                        
+                        let finalClasses = `note-dot ${cssClass}`;
+                        
+                        // 색상 모드 로직 (Individual Mode 적용)
+                        if (this.colorMode === 'individual') {
+                            if (interval === 0 && this.patternMode !== 'free') {
+                                // Root 노트는 CSS 클래스 스타일(.root) 유지 (진한 색)
+                            } else {
+                                // 그 외 노트는 파스텔 톤 적용 및 기본 CSS 제거
+                                dot.style.backgroundColor = fretboardNoteColors[noteIndex];
+                                dot.style.color = 'black'; 
+                                dot.style.border = 'none';
+                                finalClasses = 'note-dot'; // Remove 'simple-other' class styling
+                            }
+                        }
+
+                        dot.className = finalClasses;
                         dot.textContent = label;
                         return dot;
                     }
@@ -1427,9 +1517,7 @@
                 });
             }
 
-            // Free Note 모드에서 지판을 클릭했을 때의 처리
             handleFretClick(stringIndex, fretIndex) {
-                // ... (기존 handleFretClick 로직 유지)
                 const noteIndex = (fretboardOpenStrings[stringIndex] + fretIndex) % 12;
                 
                 if (this.selectedFreeNotes.has(noteIndex)) this.selectedFreeNotes.delete(noteIndex);
@@ -1446,7 +1534,6 @@
             }
 
             setupEventListeners() {
-                // ... (기존 setupEventListeners 로직 유지)
                 const update = () => {
                     this.renderCurrentPattern();
                     fretboardUpdateCombinedView();
@@ -1458,6 +1545,16 @@
                     delete fretboardInstances[this.id];
                     fretboardRenumberInstances();
                     fretboardUpdateCombinedView();
+                });
+
+                // Color Mode Buttons
+                this.dom.colorModeButtons.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.color-mode-btn');
+                    if (!btn) return;
+                    this.colorMode = btn.dataset.mode;
+                    this.dom.colorModeButtons.querySelectorAll('.color-mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    update();
                 });
 
                 // Mode Buttons
@@ -1488,7 +1585,7 @@
                     this.displayMode = btn.dataset.mode;
                     this.dom.displayModeButtons.querySelectorAll('.display-mode-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    this.renderFreeNoteButtons(); // Free Note 모드에서 레이블 업데이트
+                    this.renderFreeNoteButtons(); 
                     update();
                 });
 
@@ -1519,14 +1616,13 @@
                         if (!btn) return;
                         this.rootNote = btn.dataset.root;
                         
-                        // 현재 모드의 루트 버튼만 활성화
                         const targetRootButtons = this.patternMode === 'scale' ? this.dom.scaleRootNoteButtons : this.dom.chordRootNoteButtons;
                         targetRootButtons.querySelectorAll('.root-btn').forEach(b => {
                             if (b.dataset.root === this.rootNote) b.classList.add('active');
                             else b.classList.remove('active');
                         });
                         
-                        this.renderFreeNoteButtons(); // 루트 변경 시 Free Note 버튼의 #/b 표시 업데이트
+                        this.renderFreeNoteButtons(); 
                         update();
                     });
                 });
@@ -1559,21 +1655,16 @@
                     
                     const parentRow = target.parentElement;
                     const rowIndex = Array.from(this.dom.fretboardDisplay.children).indexOf(parentRow);
-                    if (rowIndex < 0) return; // numberRow나 markerRow 등은 무시
+                    if (rowIndex < 0) return; 
 
-                    let totalRows = this.dom.fretboardDisplay.children.length;
-                    let numStringRows = fretboardOpenStrings.length; // 6
-                    
-                    // String row는 첫 번째부터 여섯 번째까지 (인덱스 0~5)에 위치함
+                    let numStringRows = fretboardOpenStrings.length; 
                     let stringRowIndex = rowIndex; 
                     
-                    // 클릭된 요소가 String Row인지 확인 (0부터 5 사이의 인덱스)
                     if (stringRowIndex < 0 || stringRowIndex >= numStringRows) return;
                     
                     const stringIndex = stringRowIndex;
                     const fretIndex = Array.from(parentRow.children).indexOf(target);
                     
-                    // 프렛 0칸을 포함하므로 fretIndex가 0부터 시작
                     this.handleFretClick(stringIndex, fretIndex);
                 });
                 
@@ -1584,7 +1675,6 @@
         }
         
         function fretboardRenumberInstances() {
-            // ... (기존 fretboardRenumberInstances 로직 유지)
             const keys = Object.keys(fretboardInstances).map(Number).sort((a, b) => a - b);
             let newInstances = {};
             keys.forEach((oldId, index) => {
@@ -1600,7 +1690,6 @@
         }
 
         function fretboardUpdateCombinedView() {
-            // ... (기존 fretboardUpdateCombinedView 로직 유지)
             const ids = Object.keys(fretboardInstances).map(Number).sort((a, b) => a - b);
             const legendItemsContainer = document.getElementById('legend-items');
 
@@ -1639,7 +1728,7 @@
                 legendItemsContainer.appendChild(legendItem);
             });
 
-            // 2. 지판 렌더링 (Fretboard)
+            // 2. 지판 렌더링 (Fretboard) - Gradient Style (index.html 방식)
             renderFretboardGrid(combinedResultDisplay, (stringIndex, fretIndex) => {
                 const noteIndex = (fretboardOpenStrings[stringIndex] + fretIndex) % 12;
                 let activeSources = [];
@@ -1660,6 +1749,7 @@
                             id: id, 
                             idx: idx, 
                             data: data,
+                            colorVar: `--color-p${(idx % 5) + 1}`,
                             label: inst.getNoteLabelAndClass(noteIndex, data.intervals).label
                         });
                     }
@@ -1667,76 +1757,35 @@
 
                 if (activeSources.length === 0) return null;
 
-                const dot = document.createElement('div');
-                dot.className = 'note-dot';
+                const dotDiv = document.createElement('div');
+                dotDiv.className = 'note-dot';
+                dotDiv.textContent = activeSources[0].label;
+                dotDiv.style.color = 'white';
 
-                // 루트 노드 확인
-                const isRoot = activeSources.some(source => {
-                    return source.data.patternType !== 'free' && 
-                           (noteIndex - source.data.rootIndex + 12) % 12 === 0;
-                });
+                // Gradient Logic for Combined View
+                if (activeSources.length === 1) {
+                    dotDiv.style.backgroundColor = `var(${activeSources[0].colorVar})`;
+                } else {
+                    let gradientStops = [];
+                    const count = activeSources.length;
+                    
+                    // 소스 순서대로 정렬 (id 기준)
+                    activeSources.sort((a, b) => a.id - b.id);
 
-                if (isRoot) {
-                    dot.classList.add('root');
-                } else if (activeSources.length === 1) {
-                    dot.classList.add('simple-other');
-                }
-                
-                // 라벨 설정 (첫 번째 소스의 라벨을 사용)
-                dot.textContent = activeSources[0].label;
-
-                // 수직 분할 스타일 (1개 초과인 경우)
-                if (activeSources.length > 1 && !isRoot) {
-                    dot.classList.add('multi-source');
-                    dot.style.background = 'none';
-                    dot.style.boxShadow = 'none';
-                    dot.style.border = 'none';
-                    dot.style.overflow = 'hidden';
-                    dot.style.display = 'flex';
-                    dot.style.flexDirection = 'row';
-                    dot.style.padding = '0';
-                    dot.style.width = '24px';
-                    dot.style.height = '24px';
-                    dot.style.borderRadius = '50%';
-                    dot.style.border = '1px solid var(--text-main)';
-                    dot.style.zIndex = '20';
-                    dot.style.color = 'var(--text-main)'; // 라벨 색상
-
-                    activeSources.forEach(source => {
-                        const colorIndex = (source.idx % 5) + 1;
-                        const colorVar = `var(--color-p${colorIndex})`;
-                        
-                        const segment = document.createElement('div');
-                        segment.style.flex = 1;
-                        segment.style.height = '100%';
-                        segment.style.backgroundColor = colorVar;
-                        segment.style.borderRadius = '0';
-                        dot.appendChild(segment);
+                    activeSources.forEach((src, i) => {
+                        const startPct = (i / count) * 100;
+                        const endPct = ((i + 1) / count) * 100;
+                        gradientStops.push(`var(${src.colorVar}) ${startPct}% ${endPct}%`);
                     });
                     
-                    // 가운데 라벨을 덮어씌움
-                    const labelDiv = document.createElement('div');
-                    labelDiv.style.position = 'absolute';
-                    labelDiv.style.width = '100%';
-                    labelDiv.style.height = '100%';
-                    labelDiv.style.display = 'flex';
-                    labelDiv.style.justifyContent = 'center';
-                    labelDiv.style.alignItems = 'center';
-                    labelDiv.style.zIndex = '30';
-                    labelDiv.style.color = 'black'; // 텍스트를 명확히 보이기 위해 검은색 사용
-                    labelDiv.style.fontSize = '0.75em';
-                    labelDiv.style.fontWeight = 'bold';
-                    labelDiv.textContent = activeSources[0].label;
-                    dot.appendChild(labelDiv);
-
-                } else if (activeSources.length === 1) {
-                    const colorIndex = (activeSources[0].idx % 5) + 1;
-                    const colorVar = `var(--color-p${colorIndex})`;
-                    dot.style.backgroundColor = colorVar;
-                    dot.style.color = 'black';
+                    // Linear Gradient 적용 (index.html 스타일)
+                    dotDiv.style.background = `linear-gradient(to right, ${gradientStops.join(', ')})`;
+                    
+                    // 텍스트 가독성을 위해 그림자 추가
+                    dotDiv.style.textShadow = '0 0 2px black';
                 }
 
-                return dot;
+                return dotDiv;
             });
         }
 
