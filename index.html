@@ -946,8 +946,8 @@
             rhythmBPM = Math.max(40, Math.min(240, newBPM));
             rhythmBPMInput.value = rhythmBPM;
         }
-        function rhythmIncreaseBPM() { rhythmUpdateBPM(rhythmBPM + 5); }
-        function rhythmDecreaseBPM() { rhythmUpdateBPM(rhythmBPM - 5); }
+        function rhythmIncreaseBPM() { rhythmUpdateBPM(rhythmBPM + 1); }
+        function rhythmDecreaseBPM() { rhythmUpdateBPM(rhythmBPM - 1); }
         
         // [수정 2] Tap Tempo 함수에 AudioContext 활성화 로직 추가 (모바일 필수)
         let lastTapTime = 0;
