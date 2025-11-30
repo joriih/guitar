@@ -1123,12 +1123,28 @@
                     subBeat.dataset.sub = j + 1;
                     if (pattern[patternIndex] === 1) subBeat.classList.add('active');
                     
-                    subBeat.addEventListener('click', () => {
-                        rhythmInitAudio(); 
-                        if (rhythmAudioContext.state === 'suspended') rhythmAudioContext.resume();
-                        
-                        pattern[patternIndex] = pattern[patternIndex] === 1 ? 0 : 1;
+                    // [수정] 모바일 터치 감도 개선을 위한 이벤트 핸들러
+                    const toggleBeat = (e) => {
+                        // 터치로 실행될 경우, 뒤따라오는 마우스 클릭 이벤트(Ghost Click)를 막아 중복 실행 방지
+                        if (e.type === 'touchend' && e.cancelable) e.preventDefault();
+                    
+                        const index = parseInt(subBeat.dataset.subBeatIndex);
+                        rhythmPattern[index] = rhythmPattern[index] === 1 ? 0 : 1;
                         subBeat.classList.toggle('active');
+                    };
+                    
+                    // 1. PC 마우스 클릭 대응
+                    subBeat.addEventListener('click', toggleBeat);
+                    
+                    // 2. 모바일 터치 대응 (스크롤과 탭 구분 로직)
+                    let isScrolling = false;
+                    subBeat.addEventListener('touchstart', () => { isScrolling = false; }, { passive: true });
+                    subBeat.addEventListener('touchmove', () => { isScrolling = true; }, { passive: true });
+                    subBeat.addEventListener('touchend', (e) => {
+                        // 손가락을 움직이지 않고 뗐을 때만(스크롤이 아닐 때만) 실행
+                        if (!isScrolling) {
+                            toggleBeat(e);
+                        }
                     });
                     
                     subBeat.addEventListener('touchstart', (e) => {
