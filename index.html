@@ -903,128 +903,113 @@
             oscillator.stop(time + 0.03); 
         }
 
-        // [수정] 스케줄러 전체 코드 (안전하게 덮어쓰세요)
         function rhythmScheduler() {
-            if (!rhythmAudioContextInitialized) return;
-            
-            // 1. 소리 예약
+            if (!rhythmAudioContextInitialized || !rhythmIsPlaying) return;
+
             while (rhythmNextNoteTime < rhythmAudioContext.currentTime + rhythmScheduleAheadTime) {
-                // 현재 박자의 길이에 따라 한 박자의 시간 계산
-                const currentBeatLen = rhythmPattern[rhythmCurrentBeat] ? rhythmPattern[rhythmCurrentBeat].length : 4;
                 const secondsPerBeat = 60.0 / rhythmBPM;
-                
                 rhythmScheduleNote(rhythmCurrentBeat, rhythmNextNoteTime);
                 
-                rhythmNextNoteTime += secondsPerBeat; 
+                rhythmNextNoteTime += secondsPerBeat;
                 rhythmCurrentBeat = (rhythmCurrentBeat + 1) % rhythmBeatsPerMeasure;
             }
-        
-            // 2. 하이라이트 끄기 (수정됨)
+
             while (rhythmRemoveHighlightSchedule.length > 0 && rhythmRemoveHighlightSchedule[0].time < rhythmAudioContext.currentTime + rhythmScheduleAheadTime) {
                 const remove = rhythmRemoveHighlightSchedule.shift();
-                // data-beat-index와 data-sub-index로 찾기
-                const targetElement = document.querySelector(`.sub-beat[data-beat-index="${remove.beatIndex}"][data-sub-index="${remove.subIndex}"]`);
+                const targetElement = document.querySelector(`.sub-beat[data-sub-beat-index="${remove.index}"]`);
                 if (targetElement) targetElement.classList.remove('current-16th');
             }
-        
-            // 3. 하이라이트 켜기 (수정됨)
+
             while (rhythmAddHighlightSchedule.length > 0 && rhythmAddHighlightSchedule[0].time < rhythmAudioContext.currentTime + rhythmScheduleAheadTime) {
                 const highlight = rhythmAddHighlightSchedule.shift();
-                const targetElement = document.querySelector(`.sub-beat[data-beat-index="${highlight.beatIndex}"][data-sub-index="${highlight.subIndex}"]`);
-                if (targetElement) targetElement.classList.add('current-16th');
+                const currentSubBeat = document.querySelector(`.sub-beat[data-sub-beat-index="${highlight.index}"]`);
+                if (currentSubBeat) currentSubBeat.classList.add('current-16th');
             }
-        
+
             rhythmTimerId = window.setTimeout(rhythmScheduler, 25.0);
         }
 
-        // [수정] 재생 스케줄러: 각 박자 배열의 길이(3 또는 4)를 확인하여 재생합니다.
         function rhythmScheduleNote(beatNumber, scheduledTime) {
             if (!rhythmAudioContextInitialized) return;
-        
-            // 현재 박자의 패턴 가져오기 (예: [1, 0, 0, 1])
-            const currentBeatPattern = rhythmPattern[beatNumber];
-            
-            // 이 박자가 3연음인지 4연음인지 배열 길이로 판단
-            const currentSubdivision = currentBeatPattern.length; 
             
             const secondsPerBeat = 60.0 / rhythmBPM;
-            const subBeatDuration = secondsPerBeat / currentSubdivision;
+            const subBeatDuration = secondsPerBeat / rhythmSubdivision;
+            const measureIndex = beatNumber * rhythmSubdivision;
             
-            // 스윙감 처리 (4연음일 때만 적용)
-            const actualSwingValue = Math.max(50, rhythmSwingAmount);
-            const swingRatio = (actualSwingValue - 50) / 50; 
-        
-            for (let i = 0; i < currentSubdivision; i++) {
-                let noteTime = scheduledTime + subBeatDuration * i;
+            for (let i = 0; i < rhythmSubdivision; i++) {
+                const patternIndex = measureIndex + i;
+                const isBeatOne = (beatNumber === 0 && i === 0); 
+                const isDownBeat = (i === 0); 
                 
-                // 시각적 하이라이트를 위해 전체 인덱스가 아닌 '박자 번호'와 '내부 인덱스'를 함께 저장
-                // (기존 구조 호환을 위해 객체에 beatIndex 추가)
-                rhythmAddHighlightSchedule.push({ time: noteTime, beatIndex: beatNumber, subIndex: i });
-                rhythmRemoveHighlightSchedule.push({ time: noteTime + subBeatDuration, beatIndex: beatNumber, subIndex: i });
-        
-                // 스윙 적용 (4분할이고, 짝수 번째 노트일 때 뒤로 밀기)
-                if (swingRatio > 0 && currentSubdivision === 4) {
-                    if (i % 2 === 1) {
-                        const eighthNoteStart = scheduledTime + subBeatDuration * (i - 1); 
-                        const longDuration = subBeatDuration * (1 + swingRatio);
-                        noteTime = eighthNoteStart + longDuration;
+                let timeOffset = 0;
+                if (rhythmSwingAmount > 0 && rhythmSubdivision === 4) {
+                    if (i % 2 !== 0) { 
+                        const swingRatio = rhythmSwingAmount / 100.0; 
+                        const swingFactor = 2 * (1 - swingRatio); 
+                        const straightDuration = secondsPerBeat / 2; 
+                        timeOffset = straightDuration * (swingFactor - 1);
                     }
                 }
-        
-                const isRhythmActive = currentBeatPattern[i] === 1;
-                const isBeatOne = (beatNumber === 0 && i === 0); 
-                const isSubBeatOne = (i === 0); 
-        
-                if (isRhythmActive) {
-                    if (isBeatOne) rhythmPlayClick(noteTime, 880, 0.7); 
-                    else rhythmPlayClick(noteTime, 660, 0.6); 
-                } else if (rhythmIsMetronomeAlwaysOn) {
-                    if (isBeatOne) rhythmPlayClick(noteTime, 770, 0.65); 
-                    else if (isSubBeatOne) rhythmPlayClick(noteTime, 440, 0.4); 
+
+                const subBeatTime = scheduledTime + (i * subBeatDuration) + timeOffset;
+
+                const isPatternActive = rhythmPattern[patternIndex % rhythmPattern.length];
+                
+                if (isPatternActive || (rhythmIsMetronomeAlwaysOn && isDownBeat)) {
+                    // [수정된 로직]
+                    // 1. frequency와 volume 변수를 선언만 하고, 초기값은 아래 if/else 블록에서 설정합니다.
+                    let frequency; 
+                    let volume;
+
+                    if (isPatternActive) {
+                        // 2. 패턴이 활성화 된 경우 (패턴 소리가 우선)
+                        if (isDownBeat) {
+                            // 정박(Downbeat: 1, 2, 3, 4)이 활성화 됨 -> 강한 소리 (첫 박 소리처럼)
+                            frequency = 700; 
+                            volume = 1.0;
+                        } else {
+                            // 엇박(Off-beat)이 활성화 됨 -> 낮은 소리 (베이스 킥 느낌)
+                            frequency = 220;
+                            volume = 0.5;
+                        }
+                    } else {
+                        // 패턴 비활성화 상태 (메트로놈만 들릴 때)
+                        if (isBeatOne) {
+                            // 🎶 요청 사항 반영: 첫 박이 패턴 비활성화 상태이면 낮은 소리 (220Hz)
+                            frequency = 220; 
+                        } else {
+                            // 그 외 정박 (2, 3, 4)은 기본 메트로놈 소리 (440Hz)
+                            frequency = 440;
+                        }
+                        volume = 0.8; // 기본 메트로놈 볼륨
+                    }
+                    
+                    rhythmPlaySound(subBeatTime, frequency, volume);
                 }
+                
+                rhythmAddHighlightSchedule.push({ time: subBeatTime, index: patternIndex % rhythmPattern.length });
+                rhythmRemoveHighlightSchedule.push({ time: subBeatTime + subBeatDuration, index: patternIndex % rhythmPattern.length });
             }
         }
 
-        // [수정] 리듬 생성 함수: 이제 패턴을 2차원 배열(박자들의 모음)로 생성합니다.
         function rhythmGenerateRhythm() {
-            const syncopationLevel = parseInt(rhythmSyncopationRange.value);
-            const difficultyLevel = parseInt(rhythmDifficultyRange.value);
-            
-            // 기존 설정값에 따라 박자별 기본 쪼개기(3 or 4) 결정
-            // 만약 이미 패턴이 있고 구조가 2차원이라면(사용자가 수동으로 3/4를 바꾼 경우) 그 구조를 유지할 수도 있지만,
-            // '생성' 버튼을 누르면 초기화하는 것이 자연스러우므로 기본 설정(rhythmSubdivision)을 따릅니다.
-            
-            let newPattern = [];
-        
-            for (let b = 0; b < rhythmBeatsPerMeasure; b++) {
-                let beatPattern = new Array(rhythmSubdivision).fill(0);
-                
-                // 싱코페이션(엇박) 로직
-                if (Math.random() > 0.3 * (syncopationLevel / 10)) {
-                    // 해당 박자의 첫 번째 서브비트(강박)에 노트 찍기
-                    beatPattern[0] = 1; 
-                }
-        
-                // 난이도(채우기) 로직
-                for (let i = 0; i < rhythmSubdivision; i++) {
-                    // 첫 박이 아니면서 비어있는 곳 채우기
-                    if (i !== 0 && beatPattern[i] === 0) {
-                        const probability = difficultyLevel * 0.05;
-                        if (Math.random() < probability) {
-                            // 16비트(4연음)일 때 엇박 느낌 살리기
-                            if (rhythmSubdivision === 4 && i % 2 === 1) {
-                                 if (beatPattern[i - 1] === 1) beatPattern[i] = 1;
-                            } else {
-                                beatPattern[i] = 1;
-                            }
-                        }
+            rhythmSyncopationLevel = parseInt(rhythmSyncopationRange.value);
+            rhythmDifficultyLevel = parseInt(rhythmDifficultyRange.value);
+            const total16thNotes = rhythmBeatsPerMeasure * rhythmSubdivision;
+            rhythmPattern = new Array(total16thNotes).fill(0);
+
+            for(let i=0; i < total16thNotes; i++) {
+                 if (i % rhythmSubdivision === 0) { 
+                    rhythmPattern[i] = 1;
+                 } else { 
+                    if (Math.random() < rhythmSyncopationLevel * 0.05 + rhythmDifficultyLevel * 0.02) {
+                        rhythmPattern[i] = 1;
                     }
-                }
-                newPattern.push(beatPattern);
+                 }
             }
-            
-            rhythmPattern = newPattern;
+
             rhythmDisplayPattern(rhythmPattern);
+            rhythmInitAudio(); 
         }
 
         function rhythmTogglePlayPause() {
@@ -1108,90 +1093,70 @@
             document.querySelectorAll('.beat-group').forEach(b => b.classList.remove('highlight-current-beat'));
         }
 
-        // [수정] 패턴 표시 함수: 각 박자마다 3연음/4연음 토글 버튼을 추가합니다.
         function rhythmDisplayPattern(pattern) {
-            const patternDisplay = rhythmPatternDisplay;
-            patternDisplay.innerHTML = '';
+            rhythmPatternDisplay.innerHTML = '';
             
-            // pattern은 이제 [[1,0,1,0], [1,0,0], ...] 형태의 2차원 배열입니다.
-            const beats = pattern.length;
-            
-            for (let b = 0; b < beats; b++) {
+            for (let i = 0; i < rhythmBeatsPerMeasure; i++) {
                 const beatGroup = document.createElement('div');
                 beatGroup.className = 'beat-group';
-                beatGroup.dataset.beatIndex = b; 
-                
-                // === [추가된 부분 시작] 박자별 3/4 변경 버튼 ===
-                const subdivisionToggle = document.createElement('button');
-                const currentSubdiv = pattern[b].length; // 현재 이 박자의 쪼개기 수 (3 or 4)
-                
-                subdivisionToggle.textContent = currentSubdiv === 3 ? "3" : "4";
-                subdivisionToggle.style.fontSize = "0.7em";
-                subdivisionToggle.style.padding = "2px 5px";
-                subdivisionToggle.style.marginBottom = "5px";
-                subdivisionToggle.style.width = "100%";
-                subdivisionToggle.style.backgroundColor = "transparent";
-                subdivisionToggle.style.color = "var(--text-secondary)";
-                subdivisionToggle.style.border = "1px solid var(--color-panel-border)";
-                
-                subdivisionToggle.onclick = () => {
-                    // 3이면 4로, 4면 3으로 변경
-                    const newSubdiv = currentSubdiv === 3 ? 4 : 3;
-                    // 해당 박자의 패턴을 새로운 길이로 초기화 (기존 데이터는 날리고 0으로 채움)
-                    rhythmPattern[b] = new Array(newSubdiv).fill(0);
-                    // 첫 박은 1로 찍어주는 센스 (선택사항)
-                    rhythmPattern[b][0] = 1;
-                    
-                    // 화면 다시 그리기
-                    rhythmDisplayPattern(rhythmPattern);
-                };
-                beatGroup.appendChild(subdivisionToggle);
-                // === [추가된 부분 끝] ===
-        
-                const marker = document.createElement('div');
-                marker.className = 'beat-marker';
-                marker.textContent = b + 1;
-                marker.style.display = 'block'; // 비트 번호 항상 표시
-                if (b === 0) marker.classList.add('first-beat');
-                beatGroup.appendChild(marker);
-        
+                beatGroup.dataset.beatIndex = i;
+
+                const beatMarker = document.createElement('div');
+                beatMarker.className = 'beat-marker';
+                beatMarker.textContent = i + 1;
+                beatGroup.appendChild(beatMarker);
+
                 const subdivisionGroup = document.createElement('div');
                 subdivisionGroup.className = 'subdivision-group';
                 
-                for (let s = 0; s < currentSubdiv; s++) {
+                for (let j = 0; j < rhythmSubdivision; j++) {
+                    const patternIndex = (i * rhythmSubdivision) + j;
                     const subBeat = document.createElement('div');
-                    subBeat.className = 'sub-beat';
+                    subBeat.className = `sub-beat ${rhythmSubdivision === 3 ? 'sub-beat-3' : ''}`;
                     
-                    // 데이터 식별을 위해 비트 인덱스와 서브 인덱스를 모두 저장
-                    subBeat.dataset.beatIndex = b;
-                    subBeat.dataset.subIndex = s; 
+                    if (j === 0) { 
+                        subBeat.classList.add('downbeat-16th');
+                    }
                     
-                    if (currentSubdiv === 3) subBeat.classList.add('sub-beat-3');
-                    if (s === 0) subBeat.classList.add('downbeat-16th');
+                    subBeat.dataset.subBeatIndex = patternIndex;
+                    subBeat.dataset.beat = i + 1;
+                    subBeat.dataset.sub = j + 1;
+                    if (pattern[patternIndex] === 1) subBeat.classList.add('active');
                     
-                    // 2차원 배열 접근
-                    if (pattern[b][s] === 1) subBeat.classList.add('active');
-        
-                    // [이전 답변에서 수정한 터치 개선 로직 적용]
+                    // [수정] 모바일 터치 감도 개선을 위한 이벤트 핸들러
                     const toggleBeat = (e) => {
+                        // 터치로 실행될 경우, 뒤따라오는 마우스 클릭 이벤트(Ghost Click)를 막아 중복 실행 방지
                         if (e.type === 'touchend' && e.cancelable) e.preventDefault();
-                        // 2차원 배열 데이터 수정
-                        rhythmPattern[b][s] = rhythmPattern[b][s] === 1 ? 0 : 1;
+                    
+                        const index = parseInt(subBeat.dataset.subBeatIndex);
+                        rhythmPattern[index] = rhythmPattern[index] === 1 ? 0 : 1;
                         subBeat.classList.toggle('active');
                     };
-        
+                    
+                    // 1. PC 마우스 클릭 대응
                     subBeat.addEventListener('click', toggleBeat);
+                    
+                    // 2. 모바일 터치 대응 (스크롤과 탭 구분 로직)
                     let isScrolling = false;
                     subBeat.addEventListener('touchstart', () => { isScrolling = false; }, { passive: true });
                     subBeat.addEventListener('touchmove', () => { isScrolling = true; }, { passive: true });
                     subBeat.addEventListener('touchend', (e) => {
-                        if (!isScrolling) toggleBeat(e);
+                        // 손가락을 움직이지 않고 뗐을 때만(스크롤이 아닐 때만) 실행
+                        if (!isScrolling) {
+                            toggleBeat(e);
+                        }
                     });
-        
+                    
+                    subBeat.addEventListener('touchstart', (e) => {
+                        e.preventDefault(); 
+                        rhythmInitAudio(); 
+                        if (rhythmAudioContext.state === 'suspended') rhythmAudioContext.resume();
+                    });
+
                     subdivisionGroup.appendChild(subBeat);
                 }
                 beatGroup.appendChild(subdivisionGroup);
-                patternDisplay.appendChild(beatGroup);
+                rhythmPatternDisplay.appendChild(beatGroup);
             }
         }
 
