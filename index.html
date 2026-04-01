@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPCEtLSBCb2R5IC0tPgogIDxlbGxpcHNlIGN4PSIxNiIgY3k9IjIyIiByeD0iOSIgcnk9IjciIGZpbGw9IiNBMUJERjgiIHN0cm9rZT0iIzIyNTVhYSIgc3Ryb2tlLXdpZHRoPSIxLjIiLz4KICA8IS0tIFdhaXN0IC0tPgogIDxlbGxpcHNlIGN4PSIxNiIgY3k9IjE2IiByeD0iNSIgcnk9IjQiIGZpbGw9IiNmM2Y3ZmYiIHN0cm9rZT0iIzIyNTVhYSIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgPCEtLSBOZWNrIC0tPgogIDxyZWN0IHg9IjE0LjUiIHk9IjQiIHdpZHRoPSIzIiBoZWlnaHQ9IjEyIiByeD0iMS4yIiBmaWxsPSIjMjI1NWFhIi8+CiAgPCEtLSBIZWFkc3RvY2sgLS0+CiAgPHJlY3QgeD0iMTMiIHk9IjIiIHdpZHRoPSI2IiBoZWlnaHQ9IjQiIHJ4PSIxLjIiIGZpbGw9IiMyMjU1YWEiLz4KICA8IS0tIFR1bmluZyBwZWdzIGxlZnQgLS0+CiAgPGNpcmNsZSBjeD0iMTMiIGN5PSIzIiByPSIxIiBmaWxsPSIjQTFCREY4Ii8+CiAgPGNpcmNsZSBjeD0iMTMiIGN5PSI1LjUiIHI9IjEiIGZpbGw9IiNBMUJERjgiLz4KICA8IS0tIFR1bmluZyBwZWdzIHJpZ2h0IC0tPgogIDxjaXJjbGUgY3g9IjE5IiBjeT0iMyIgcj0iMSIgZmlsbD0iI0ExQkRGOCIvPgogIDxjaXJjbGUgY3g9IjE5IiBjeT0iNS41IiByPSIxIiBmaWxsPSIjQTFCREY4Ii8+CiAgPCEtLSBTb3VuZCBob2xlIC0tPgogIDxjaXJjbGUgY3g9IjE2IiBjeT0iMjEiIHI9IjIuNSIgZmlsbD0iIzIyNTVhYSIgb3BhY2l0eT0iMC4yNSIvPgogIDwhLS0gU3RyaW5ncyAoMykgLS0+CiAgPGxpbmUgeDE9IjE1IiB5MT0iNiIgeDI9IjE1IiB5Mj0iMjYiIHN0cm9rZT0iIzIyNTVhYSIgc3Ryb2tlLXdpZHRoPSIwLjUiIG9wYWNpdHk9IjAuNSIvPgogIDxsaW5lIHgxPSIxNiIgeTE9IjYiIHgyPSIxNiIgeTI9IjI2IiBzdHJva2U9IiMyMjU1YWEiIHN0cm9rZS13aWR0aD0iMC40IiBvcGFjaXR5PSIwLjUiLz4KICA8bGluZSB4MT0iMTciIHkxPSI2IiB4Mj0iMTciIHkyPSIyNiIgc3Ryb2tlPSIjMjI1NWFhIiBzdHJva2Utd2lkdGg9IjAuMyIgb3BhY2l0eT0iMC41Ii8+Cjwvc3ZnPg==">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPCEtLSBCYWNrZ3JvdW5kIC0tPgogIDxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgcng9IjciIGZpbGw9IiNlZGY0ZmYiLz4KICA8IS0tIEd1aXRhciBib2R5IC0gbG93ZXIgYm91dCAtLT4KICA8ZWxsaXBzZSBjeD0iMTYiIGN5PSIyMyIgcng9IjguNSIgcnk9IjYuNSIgZmlsbD0iIzIyNTVhYSIvPgogIDwhLS0gR3VpdGFyIGJvZHkgLSB1cHBlciBib3V0IChzbWFsbGVyKSAtLT4KICA8ZWxsaXBzZSBjeD0iMTYiIGN5PSIxNC41IiByeD0iNiIgcnk9IjUiIGZpbGw9IiMyMjU1YWEiLz4KICA8IS0tIFdhaXN0IGN1dG91dCBsZWZ0IC0tPgogIDxlbGxpcHNlIGN4PSIxMC41IiBjeT0iMTguNSIgcng9IjMuNSIgcnk9IjIuNSIgZmlsbD0iI2VkZjRmZiIvPgogIDwhLS0gV2Fpc3QgY3V0b3V0IHJpZ2h0IC0tPgogIDxlbGxpcHNlIGN4PSIyMS41IiBjeT0iMTguNSIgcng9IjMuNSIgcnk9IjIuNSIgZmlsbD0iI2VkZjRmZiIvPgogIDwhLS0gTmVjayAtLT4KICA8cmVjdCB4PSIxNC44IiB5PSI0LjUiIHdpZHRoPSIyLjQiIGhlaWdodD0iMTAuNSIgcng9IjEuMiIgZmlsbD0iIzIyNTVhYSIvPgogIDwhLS0gTnV0IC0tPgogIDxyZWN0IHg9IjE0LjQiIHk9IjQiIHdpZHRoPSIzLjIiIGhlaWdodD0iMSIgcng9IjAuNCIgZmlsbD0iI0ExQkRGOCIvPgogIDwhLS0gU291bmQgaG9sZSAtLT4KICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjIyIiByPSIyLjIiIGZpbGw9IiNlZGY0ZmYiIG9wYWNpdHk9IjAuMzUiLz4KICA8IS0tIEJyaWRnZSAtLT4KICA8cmVjdCB4PSIxMi41IiB5PSIyNS41IiB3aWR0aD0iNyIgaGVpZ2h0PSIxLjIiIHJ4PSIwLjYiIGZpbGw9IiNBMUJERjgiIG9wYWNpdHk9IjAuOCIvPgo8L3N2Zz4=">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>기타 뿌시기</title>
@@ -469,10 +469,108 @@ details[open] summary.category-label::after { transform:rotate(180deg); }
   overflow-x: auto;
 }
 
+
+/* ── Dark mode ─────────────────────────────────────────────────────────────── */
+body.dark-mode {
+  --bg-primary: #0d1117;
+  --bg-panel: #161b22;
+  --text-main: #A1BDF8;
+  --text-secondary: #7a9cc8;
+  --color-panel-border: #2a3a5a;
+  --color-input-bg: #1a2233;
+  --color-accent: #A1BDF8;
+  --color-panel-border: #243050;
+  --color-divider: #243050;
+  --string-color: #4a6080;
+  --chip-bg: #1a2233;
+  --chip-bg-hover: #1e2a40;
+  --chip-bg-active: rgba(161,189,248,0.25);
+  --chip-text: #A1BDF8;
+  --chip-text-active: #A1BDF8;
+  --chip-border: #2a3a5a;
+  --chip-border-active: rgba(161,189,248,0.5);
+  --label-color: #4a6888;
+  --dot-color: #2a3a5a;
+}
+body.dark-mode .panel,
+body.dark-mode .pattern-panel,
+body.dark-mode .fretboard-instance,
+body.dark-mode .harmony-panel,
+body.dark-mode .backing-section { background-color:#161b22; border-color:#243050; }
+body.dark-mode .fretboard-display { background:#111822; border-color:#243050; }
+body.dark-mode .fret-0-cell { background:#0d1117; border-color:#2a3a5a; }
+body.dark-mode .fret-cell { border-color:#1e2a3a; }
+body.dark-mode .fretboard-row .fret-cell:nth-child(13) { border-color:#3a5070; }
+body.dark-mode .number-row { border-color:#243050; }
+body.dark-mode .marker-row { border-color:#1e2a3a; }
+body.dark-mode .fret-marker-dot { background:#2a3a5a; }
+body.dark-mode .note-dot.root { background:#A1BDF8; border-color:#6a9de0; color:#0d1117; }
+body.dark-mode .note-dot.simple-other { background:#1a2a42; border-color:rgba(161,189,248,0.5); color:#A1BDF8; }
+body.dark-mode .mini-fretboard { background:#111822; border-color:#243050; }
+body.dark-mode .mini-fretboard .fret-0-cell { background:#0d1117; border-color:#3a5070; }
+body.dark-mode details.category-group { background:#1a2233; border-color:#243050; }
+body.dark-mode summary.category-label { background:#111822; color:#A1BDF8; }
+body.dark-mode .fb-tab-group { border-color:#243050; }
+body.dark-mode .fb-tab-group button { background:#1a2233; color:#7a9cc8; border-color:#243050; }
+body.dark-mode .fb-tab-group button.active { background:rgba(161,189,248,0.22); color:#A1BDF8; }
+body.dark-mode .fb-tab-group button:hover:not(.active) { background:#1e2a40; }
+body.dark-mode .fb-root-chips .root-btn { background:#1a2233; color:#7a9cc8; border-color:#243050; }
+body.dark-mode .fb-root-chips .root-btn.active { background:rgba(161,189,248,0.22); color:#A1BDF8; border-color:rgba(161,189,248,0.4); }
+body.dark-mode .fb-chip-wrap .scale-btn,
+body.dark-mode .fb-chip-wrap .chord-btn { background:#1a2233; color:#7a9cc8; border-color:#243050; }
+body.dark-mode .fb-chip-wrap .scale-btn.active,
+body.dark-mode .fb-chip-wrap .chord-btn.active { background:rgba(161,189,248,0.22); color:#A1BDF8; border-color:rgba(161,189,248,0.4); }
+body.dark-mode .pos-btn { background:#1a2233; color:#7a9cc8; border-color:#243050; }
+body.dark-mode .pos-btn.active { background:rgba(161,189,248,0.22); color:#A1BDF8; border-color:rgba(161,189,248,0.4); }
+body.dark-mode button { background-color:#1a2233; color:#A1BDF8; }
+body.dark-mode .button-group button { background:#1a2233; color:#7a9cc8; border-color:#243050; }
+body.dark-mode .button-group button.active { background:rgba(161,189,248,0.22); color:#A1BDF8; border-color:rgba(161,189,254,0.4); }
+body.dark-mode .swing-buttons { background:#111822; border-color:#243050; }
+body.dark-mode .swing-btn { color:#7a9cc8; }
+body.dark-mode .swing-btn.active { background:rgba(161,189,248,0.22); color:#A1BDF8; }
+body.dark-mode .sub-beat { background:#1a2233; }
+body.dark-mode .sub-beat.downbeat-16th { background:#1e2a40; }
+body.dark-mode .sub-beat.active { background:rgba(161,189,248,0.5); }
+body.dark-mode .sub-beat.downbeat-16th.active { background:rgba(161,189,248,0.5); }
+body.dark-mode .remove-fretboard-btn { background:#2a1a1a; color:#cc6677; border-color:#3a2020; }
+body.dark-mode .toggle-compact-btn { background:#1a2233; color:#7a9cc8; border-color:#243050; }
+body.dark-mode .backing-chord-box { background:#1a2233; border-color:#243050; color:#7a9cc8; }
+body.dark-mode .backing-chord-box.current { background:rgba(161,189,248,0.22); color:#A1BDF8; border-color:rgba(161,189,248,0.4); }
+body.dark-mode select, body.dark-mode .meter-select { background:#1a2233; color:#A1BDF8; border-color:#243050; }
+body.dark-mode input[type="range"] { background:#1e2a3a; }
+body.dark-mode .slider { background-color:#243050; }
+body.dark-mode .bpm-input-group button { background:#1a2233; color:#A1BDF8; }
+body.dark-mode .bpm-input-group input { background:#111822; color:#A1BDF8; }
+body.dark-mode .pattern-info { background:#1a2233; border-color:#243050; color:#7a9cc8; }
+body.dark-mode .diatonic-table th,
+body.dark-mode .tension-table th { background:#1a2233; color:#A1BDF8; border-color:#243050; }
+body.dark-mode .diatonic-table td,
+body.dark-mode .tension-table td { border-color:#243050; color:#A1BDF8; }
+body.dark-mode .prog-item { background:#1a2233; border-color:#243050; }
+body.dark-mode .prog-name { color:#A1BDF8; }
+body.dark-mode .prog-chords { color:#7a9cc8; }
+body.dark-mode .dtab-btn { background:#1a2233; color:#7a9cc8; border-color:#243050; }
+body.dark-mode .dtab-btn.active { background:rgba(161,189,248,0.22); color:#A1BDF8; border-color:rgba(161,189,248,0.4); }
+body.dark-mode .diatonic-key-select button { background:#1a2233; color:#7a9cc8; border-color:#243050; }
+body.dark-mode .diatonic-key-select button.active { background:rgba(161,189,248,0.22); color:#A1BDF8; border-color:rgba(161,189,248,0.4); }
+body.dark-mode .custom-prog-slot { background:#1a2233; border-color:#243050; color:#A1BDF8; }
+body.dark-mode #blues-chart > div { background:#1a2233; border-color:#243050; }
+body.dark-mode #strum-display > div > div:last-child { background:#1a2233; border-color:#243050; color:#A1BDF8; }
+body.dark-mode #capo-result { background:#1a2233; border-color:#243050; }
+body.dark-mode #ear-choices button { background:#1a2233; border-color:#243050; color:#7a9cc8; }
+body.dark-mode #timer-progress-wrap { background:#1a2233; }
+body.dark-mode #timer-display { color:#A1BDF8; }
+body.dark-mode .free-note-key { background:#1a2233; border-color:#243050; color:#7a9cc8; }
+body.dark-mode .free-note-key.active { background:rgba(161,189,248,0.22); color:#A1BDF8; border-color:rgba(161,189,248,0.4); }
+body.dark-mode .mini-fretboard-wrapper { background:#111822; border-color:#243050; }
+
 </style>
 </head>
 <body>
-<div class="header"><h1 style="text-align:center;">🎸 기타 뿌시기</h1></div>
+<div class="header" style="display:flex;justify-content:center;align-items:center;gap:16px;position:relative;">
+  <h1 style="text-align:center;margin:0;">🎸 기타 뿌시기</h1>
+  <button id="theme-toggle-btn" style="position:absolute;right:0;top:50%;transform:translateY(-50%);width:auto;padding:6px 12px;font-size:0.82em;background:#edf4ff;color:#2255aa;border:1px solid #ccddf8;border-radius:20px;margin:0;">🌙 다크</button>
+</div>
 
 <!-- RHYTHM SECTION -->
 <div class="top-container">
@@ -1121,18 +1219,40 @@ const rhythmTapTimeMax = 4;
 
 
 // ── iOS AudioContext unlock ──────────────────────────────────────────────────
+// iOS Safari: AudioContext starts 'suspended' and MUST be resumed inside a user gesture.
+// We keep a registry of all contexts and resume them all on first touch/click.
+const _iosAudioCtxRegistry = new Set();
+let _iosUnlocked = false;
+
+function _iosUnlockAll() {
+  if (_iosUnlocked) return;
+  _iosAudioCtxRegistry.forEach(ctx => {
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+  });
+  _iosUnlocked = true;
+}
+
+// Attach once to document — fires on very first user interaction
+['touchstart','touchend','click','keydown'].forEach(evt => {
+  document.addEventListener(evt, _iosUnlockAll, { once: false, passive: true, capture: true });
+});
+
 function unlockAudioContext(ctx) {
-  if (!ctx || ctx.state !== 'suspended') return;
-  const unlock = () => {
-    ctx.resume().then(() => {
-      document.body.removeEventListener('touchstart', unlock);
-      document.body.removeEventListener('touchend', unlock);
-      document.body.removeEventListener('click', unlock);
-    });
-  };
-  document.body.addEventListener('touchstart', unlock, { passive: true });
-  document.body.addEventListener('touchend',   unlock, { passive: true });
-  document.body.addEventListener('click',      unlock, { passive: true });
+  if (!ctx) return;
+  _iosAudioCtxRegistry.add(ctx);
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+}
+
+// Also create a silent buffer and play it — classic iOS unlock trick
+function _playIOSSilentBuffer(ctx) {
+  try {
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+    src.stop(0.001);
+  } catch(e) {}
 }
 function rhythmInitAudio() {
   if (rhythmAudioContextInitialized) {
@@ -1140,8 +1260,8 @@ function rhythmInitAudio() {
     return;
   }
   rhythmAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-  if (rhythmAudioContext.state === 'suspended') rhythmAudioContext.resume();
   unlockAudioContext(rhythmAudioContext);
+  _playIOSSilentBuffer(rhythmAudioContext);
   rhythmMetronomeOscillator = rhythmAudioContext.createOscillator();
   rhythmMetronomeOscillator.type = 'square';
   rhythmMetronomeOscillator.frequency.setValueAtTime(440, 0);
@@ -1332,7 +1452,7 @@ function rhythmUpdateTheme(t, m) {
 }
 
 rhythmPlayPauseBtn.addEventListener('click', rhythmTogglePlayPause);
-rhythmPlayPauseBtn.addEventListener('touchstart', (e) => { e.preventDefault(); rhythmTogglePlayPause(); });
+rhythmPlayPauseBtn.addEventListener('touchstart', (e) => { e.preventDefault(); rhythmInitAudio(); rhythmTogglePlayPause(); });
 rhythmBPMIncreaseBtn.addEventListener('click', rhythmIncreaseBPM);
 rhythmBPMDecreaseBtn.addEventListener('click', rhythmDecreaseBPM);
 rhythmGenerateBtn.addEventListener('click', () => { rhythmInitAudio(); if (rhythmAudioContext && rhythmAudioContext.state === 'suspended') rhythmAudioContext.resume(); rhythmGenerateRhythm(); });
@@ -2322,6 +2442,7 @@ function initBackingAudio() {
   if (!backingAudioCtx) {
     backingAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
     unlockAudioContext(backingAudioCtx);
+    _playIOSSilentBuffer(backingAudioCtx);
   }
   if (backingAudioCtx.state === 'suspended') backingAudioCtx.resume();
 }
@@ -2763,6 +2884,7 @@ function buildBackingChordDisplay() {
   });
 }
 
+backingPlayBtn.addEventListener('touchstart', () => { initBackingAudio(); }, { passive: true });
 backingPlayBtn.addEventListener('click', () => {
   initBackingAudio();
   if (backingIsPlaying) { // toggle stop
@@ -2938,8 +3060,8 @@ const CHORD_IVS = {
 };
 
 function initEarAudio() {
-  if (!earAudioCtx) earAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (earAudioCtx.state === 'suspended') earAudioCtx.resume();
+  if (!earAudioCtx) { earAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); unlockAudioContext(earAudioCtx); _playIOSSilentBuffer(earAudioCtx); }
+  if (earAudioCtx.state === 'suspended') earAudioCtx.resume().catch(()=>{});
 }
 
 function playEarTone(midi, t0, dur) {
@@ -3370,6 +3492,31 @@ document.getElementById('timer-reset-btn').addEventListener('click', () => {
   document.getElementById('timer-display').style.color = '#2255aa';
   document.getElementById('timer-progress').style.width = '0%';
 });
+
+
+// ── Dark / Light mode toggle ──────────────────────────────────────────────────
+const themeToggleBtn = document.getElementById('theme-toggle-btn');
+let isDarkMode = localStorage.getItem('guitar_dark_mode') === 'true';
+
+function applyTheme() {
+  if (isDarkMode) {
+    document.body.classList.add('dark-mode');
+    themeToggleBtn.textContent = '☀️ 라이트';
+    themeToggleBtn.style.cssText = 'position:absolute;right:0;top:50%;transform:translateY(-50%);width:auto;padding:6px 12px;font-size:0.82em;background:#1a2233;color:#A1BDF8;border:1px solid #243050;border-radius:20px;margin:0;';
+  } else {
+    document.body.classList.remove('dark-mode');
+    themeToggleBtn.textContent = '🌙 다크';
+    themeToggleBtn.style.cssText = 'position:absolute;right:0;top:50%;transform:translateY(-50%);width:auto;padding:6px 12px;font-size:0.82em;background:#edf4ff;color:#2255aa;border:1px solid #ccddf8;border-radius:20px;margin:0;';
+  }
+}
+
+themeToggleBtn.addEventListener('click', () => {
+  isDarkMode = !isDarkMode;
+  localStorage.setItem('guitar_dark_mode', isDarkMode);
+  applyTheme();
+});
+
+applyTheme();
 
 </script>
 </body>
