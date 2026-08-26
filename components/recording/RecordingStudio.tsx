@@ -2665,6 +2665,7 @@ export function RecordingStudio({
       Math.round(20 * Math.log10(Math.max(inputLevel, Math.pow(10, -48 / 20)))),
     ),
   );
+  const inputLevelMeterPercent = ((inputLevelDb + 48) / 48) * 100;
 
   function handleWritingTabKeyDown(
     event: ReactKeyboardEvent<HTMLButtonElement>,
@@ -2957,7 +2958,7 @@ export function RecordingStudio({
             aria-valuenow={inputLevelDb}
             aria-valuetext={`${inputLevelDb} dB`}
           >
-            <span style={{ width: `${inputLevel * 100}%` }} />
+            <span style={{ width: `${inputLevelMeterPercent}%` }} />
           </div>
           <span>0 dB</span>
         </div>

@@ -157,6 +157,8 @@ test("recording meters and compact mobile options expose their real values witho
   assert.match(recording, /aria-valuemax=\{0\}/);
   assert.match(recording, /aria-valuenow=\{inputLevelDb\}/);
   assert.match(recording, /aria-valuetext=\{`\$\{inputLevelDb\} dB`\}/);
+  assert.match(recording, /const inputLevelMeterPercent = \(\(inputLevelDb \+ 48\) \/ 48\) \* 100/);
+  assert.match(recording, /width: `\$\{inputLevelMeterPercent\}%`/);
   assert.match(
     recordingStyles,
     /@media \(max-width: 700px\)[\s\S]*?\.recordSettings\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*overflow-x:\s*visible/s,
