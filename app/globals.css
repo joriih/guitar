@@ -1,0 +1,209 @@
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/Pretendard-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/Pretendard-Medium.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/Pretendard-SemiBold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pretendard";
+  src: url("/fonts/Pretendard-Bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+  /* White foundations: imagery and content provide the colour. */
+  --canvas: #ffffff;
+  --surface: #ffffff;
+  --surface-soft: #f3f3f0;
+  --surface-strong: #e9e8e3;
+  --ink: #1b1a18;
+  --ink-soft: #484641;
+  --muted: #74716a;
+  --muted-strong: #5f5c56;
+  --line: #dfdcd4;
+  --line-strong: #cac6bc;
+  --accent: #f0445e;
+  --accent-deep: #dc2f4b;
+  --accent-soft: #fff0f3;
+  --record: #f0445e;
+  --play: #2f6f51;
+  --cycle: #74716a;
+  --studio: #20211f;
+  --studio-raised: #2a2b29;
+  --studio-line: #3b3d39;
+  --studio-text: #f4f2ec;
+  --positive: #2f7855;
+  --warning: #655f57;
+  --danger: #c72c45;
+  --focus: #1b1a18;
+
+  /* One restrained elevation system; most grouping is done with spacing and lines. */
+  --shadow-xs: 0 1px 1px rgb(27 26 24 / 4%);
+  --shadow-sm: 0 6px 20px rgb(27 26 24 / 5%);
+  --shadow-md: 0 18px 48px rgb(27 26 24 / 8%);
+
+  /* Shape hierarchy: flush / control / card / large panel. */
+  --radius-none: 0;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-panel: 16px;
+  --radius-xs: var(--radius-control);
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius-card);
+  --radius-lg: var(--radius-card);
+  --radius-xl: var(--radius-panel);
+  --radius-pill: 999px;
+
+  /* 4px-based spacing scale. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* Pretendard type scale shared by library, auth and studio chrome. */
+  --text-caption: 11px;
+  --text-label: 12px;
+  --text-body: 14px;
+  --text-ui: 14px;
+  --text-subtitle: 16px;
+  --text-section: 20px;
+  --text-title: 28px;
+  --text-display: clamp(32px, 4vw, 44px);
+  --leading-tight: 1.15;
+  --leading-body: 1.55;
+  --tracking-tight: -0.035em;
+
+  --content-width: 1240px;
+  --sidebar-width: 224px;
+  --topbar-height: 64px;
+  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--canvas);
+  font-family: var(--font-sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 400;
+  line-height: var(--leading-body);
+}
+
+button,
+input,
+textarea,
+select {
+  color: inherit;
+  font: inherit;
+}
+
+button,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img,
+svg {
+  display: block;
+}
+
+img {
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

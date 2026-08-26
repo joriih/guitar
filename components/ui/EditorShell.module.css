@@ -1,0 +1,330 @@
+.editorShell {
+  display: flex;
+  min-width: 320px;
+  min-height: 100svh;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.editorHeader {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: grid;
+  min-height: 64px;
+  grid-template-columns: minmax(160px, 1fr) minmax(280px, 560px) minmax(160px, 1fr);
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-2) var(--space-5);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.breadcrumb {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-label);
+  white-space: nowrap;
+}
+
+.breadcrumb a:not(.backButton) {
+  display: inline-flex;
+  overflow: hidden;
+  max-width: 240px;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-control);
+  text-overflow: ellipsis;
+}
+
+.backButton {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-control);
+  color: var(--ink-soft);
+}
+
+.breadcrumb a:hover {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.titleField {
+  display: block;
+  min-width: 0;
+}
+
+.titleField input {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  outline: 0;
+  background: transparent;
+  font-size: var(--text-subtitle);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  text-align: center;
+  text-overflow: ellipsis;
+}
+
+.titleField input:hover {
+  background: var(--canvas);
+}
+
+.titleField input:focus {
+  border-color: var(--line-strong);
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  background: var(--surface);
+}
+
+.headerActions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.saveStatus {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  white-space: nowrap;
+}
+
+.transportSlot {
+  position: relative;
+  z-index: 12;
+  min-width: 0;
+  min-height: 72px;
+  border-bottom: 1px solid #10110f;
+  background: var(--studio);
+  color: var(--studio-text);
+}
+
+.editorBody {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.editorBody.withRail {
+  grid-template-columns: 216px minmax(0, 1fr);
+}
+
+.editorBody.withInspector {
+  grid-template-columns: minmax(0, 1fr) 280px;
+}
+
+.editorBody.withRail.withInspector {
+  grid-template-columns: 216px minmax(0, 1fr) 280px;
+}
+
+.editorRail,
+.inspectorSlot {
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--surface);
+}
+
+.editorRail {
+  border-right: 1px solid var(--line-strong);
+}
+
+.inspectorSlot {
+  border-left: 1px solid var(--line-strong);
+}
+
+.editorViewport {
+  min-width: 0;
+  overflow: auto;
+  background:
+    linear-gradient(90deg, rgb(255 255 255 / 4%) 1px, transparent 1px),
+    #343532;
+  background-size: 80px 100%;
+  scrollbar-color: #777872 #2c2d2a;
+  scrollbar-width: thin;
+}
+
+.editorCanvas {
+  min-width: 920px;
+  min-height: 100%;
+}
+
+.bottomDock {
+  position: relative;
+  z-index: 14;
+  max-height: min(42svh, 420px);
+  overflow: auto;
+  border-top: 1px solid var(--line-strong);
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.panel {
+  min-width: 0;
+  border-bottom: 1px solid var(--line-strong);
+  background: var(--surface);
+}
+
+.panelHeader {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-soft);
+}
+
+.panelTitle,
+.panelActions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.panelTitle {
+  color: var(--muted-strong);
+}
+
+.panelTitle strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: var(--text-label);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panelActions {
+  justify-content: flex-end;
+}
+
+.panelBody {
+  min-width: 0;
+}
+
+.panelSection {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.panelSection + .panelSection {
+  border-top: 1px solid var(--line);
+}
+
+.panelSection h3 {
+  color: var(--muted);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.trackFrame {
+  display: flex;
+  min-width: 920px;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+.trackFrameTools {
+  position: sticky;
+  z-index: 5;
+  top: 0;
+  min-height: 40px;
+  border-bottom: 1px solid #272825;
+  background: #3e3f3c;
+}
+
+.trackFrameCanvas {
+  min-height: 430px;
+  flex: 1;
+}
+
+@media (max-width: 1080px) {
+  .editorBody.withRail.withInspector,
+  .editorBody.withInspector {
+    grid-template-columns: 192px minmax(0, 1fr);
+  }
+
+  .editorBody.withInspector:not(.withRail) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .editorBody.withRail.withInspector .inspectorSlot,
+  .editorBody.withInspector:not(.withRail) .inspectorSlot {
+    display: none;
+  }
+
+  .editorBody.withRail {
+    grid-template-columns: 192px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .editorHeader {
+    min-height: 64px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--space-2);
+    padding-inline: var(--space-2);
+  }
+
+  .breadcrumb > a:not(.backButton),
+  .breadcrumb > svg,
+  .saveStatus {
+    display: none;
+  }
+
+  .titleField input {
+    height: 36px;
+    padding-inline: var(--space-1);
+    font-size: var(--text-ui);
+  }
+
+  .transportSlot {
+    min-height: 64px;
+    overflow-x: auto;
+  }
+
+  .editorBody.withRail,
+  .editorBody.withRail.withInspector {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .editorRail,
+  .inspectorSlot {
+    display: none;
+  }
+
+  .editorCanvas,
+  .trackFrame {
+    min-width: 760px;
+  }
+
+  .bottomDock {
+    max-height: 50svh;
+  }
+}

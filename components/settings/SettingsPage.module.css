@@ -1,0 +1,376 @@
+.page {
+  width: min(960px, 100%);
+  margin: 0 auto;
+}
+
+.heading {
+  margin-bottom: clamp(var(--space-6), 5vw, var(--space-7));
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+.heading h1 {
+  font-size: var(--text-display);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+}
+
+.heading > p:last-child {
+  margin-top: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-label);
+}
+
+.cards {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.cardHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) clamp(var(--space-5), 4vw, var(--space-6));
+  border-bottom: 1px solid var(--line);
+}
+
+.cardIcon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: var(--ink);
+  color: white;
+}
+
+.securityIcon {
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+}
+
+.cardHeading h2 {
+  font-size: var(--text-subtitle);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.cardHeading p {
+  margin-top: var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-label);
+}
+
+.healthCard {
+  margin-top: var(--space-4);
+}
+
+.storageIcon {
+  background: var(--surface-soft);
+  color: var(--positive);
+}
+
+.healthBody {
+  display: grid;
+  gap: var(--space-4);
+  padding: clamp(var(--space-5), 4vw, var(--space-6));
+}
+
+.healthMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.healthMetric {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface-soft);
+}
+
+.healthMetric dt {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.healthMetric dd {
+  margin-top: var(--space-2);
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: var(--text-section);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.healthUnavailable {
+  padding: var(--space-4);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  font-size: var(--text-label);
+}
+
+.backupPanel {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.backupIcon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-control);
+  background: var(--surface-soft);
+  color: var(--muted-strong);
+}
+
+.backupCopy {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.backupCopy > span,
+.backupCopy small {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+
+.backupCopy strong {
+  overflow-wrap: anywhere;
+  color: var(--ink-soft);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+.backupGuidance {
+  color: var(--muted-strong);
+  font-size: var(--text-label);
+  line-height: 1.7;
+}
+
+.backupGuidance code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.form {
+  display: grid;
+  gap: var(--space-5);
+  padding: clamp(var(--space-5), 4vw, var(--space-6));
+}
+
+.formFields {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.formFields:disabled {
+  opacity: 0.68;
+}
+
+.formFields:disabled input {
+  cursor: wait;
+}
+
+.twoColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.field {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2);
+  color: var(--ink-soft);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+.field input,
+.usernameInput {
+  width: 100%;
+  height: 48px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.field > input {
+  padding: 0 var(--space-4);
+  outline: 0;
+  font-size: var(--text-body);
+  font-weight: 500;
+}
+
+.field > input:focus,
+.usernameInput:focus-within {
+  border-color: var(--ink-soft);
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  background: var(--surface);
+}
+
+.usernameInput {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  color: var(--muted);
+  font-size: var(--text-body);
+}
+
+.usernameInput input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: var(--text-body);
+  font-weight: 500;
+}
+
+.field small {
+  color: var(--muted);
+  font-size: var(--text-caption);
+  font-weight: 400;
+}
+
+.securityNote {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--surface-soft);
+  color: var(--muted-strong);
+  font-size: var(--text-label);
+  line-height: 1.5;
+}
+
+.securityNote svg {
+  flex: 0 0 auto;
+  color: var(--positive);
+}
+
+.formFooter {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.primaryButton {
+  display: inline-flex;
+  min-height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--ink);
+  color: white;
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+.successMessage,
+.errorMessage {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+  margin-right: auto;
+  font-size: var(--text-label);
+  line-height: 1.45;
+}
+
+.successMessage {
+  color: var(--positive);
+}
+
+.errorMessage {
+  color: var(--danger);
+}
+
+.successMessage svg {
+  flex: 0 0 auto;
+}
+
+.spin {
+  animation: settings-spin 800ms linear infinite;
+}
+
+@keyframes settings-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .healthMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .twoColumns {
+    grid-template-columns: 1fr;
+  }
+
+  .cardHeading {
+    align-items: flex-start;
+  }
+
+  .formFooter {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .primaryButton {
+    width: 100%;
+  }
+}

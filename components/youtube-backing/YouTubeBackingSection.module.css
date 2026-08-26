@@ -1,0 +1,354 @@
+.section {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-top: 1px solid var(--line);
+  background: #fff;
+}
+
+.heading,
+.heading > div,
+.formActions,
+.recordTogether,
+.recordTogether > div {
+  display: flex;
+  align-items: center;
+}
+
+.heading {
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.heading > div {
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+.heading h4,
+.heading p,
+.help,
+.error,
+.message,
+.empty,
+.recordTogether p {
+  margin: 0;
+}
+
+.heading h4 {
+  font-size: var(--text-body);
+  font-weight: 650;
+}
+
+.heading p,
+.help,
+.empty,
+.recordTogether span {
+  color: var(--muted, #686a64);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+
+.heading > span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--muted, #686a64);
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+
+.form {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.form label {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-2);
+  color: #4d4e49;
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+
+.urlField > div,
+.unitInput {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.urlField svg {
+  position: absolute;
+  left: var(--space-3);
+  z-index: 1;
+  color: #777870;
+  pointer-events: none;
+}
+
+.form input[type="text"],
+.form input[type="url"],
+.form input[type="number"] {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: #fff;
+  color: var(--ink);
+  font-size: var(--text-body);
+}
+
+.urlField input {
+  padding-left: 36px !important;
+}
+
+.form input:focus-visible,
+.form button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px #161616;
+}
+
+.settingsGrid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(120px, 0.45fr) minmax(180px, 0.7fr);
+  gap: var(--space-3);
+}
+
+.unitInput input {
+  padding-right: 38px !important;
+}
+
+.unitInput em {
+  position: absolute;
+  right: var(--space-3);
+  color: var(--muted, #686a64);
+  font-size: var(--text-caption);
+  font-style: normal;
+  font-weight: 500;
+}
+
+.volumeField > span {
+  display: flex;
+  justify-content: space-between;
+}
+
+.volumeField output {
+  color: var(--muted, #686a64);
+  font-variant-numeric: tabular-nums;
+}
+
+.volumeField input {
+  width: 100%;
+  height: 24px;
+  margin: 8px 0;
+  accent-color: #dc2f4b;
+}
+
+.syncChoice {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2) !important;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.syncChoice input {
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: #1b1a18;
+}
+
+.syncChoice span {
+  display: grid;
+  gap: 2px;
+}
+
+.syncChoice strong {
+  color: var(--ink);
+  font-size: var(--text-label);
+}
+
+.syncChoice small {
+  color: var(--muted, #686a64);
+  font-size: var(--text-caption);
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.formActions {
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.formActions button,
+.recordTogether button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: #fff;
+  color: #393a36;
+  font-size: var(--text-label);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.saveButton,
+.recordTogether button {
+  border-color: #1b1a18 !important;
+  background: #1b1a18 !important;
+  color: #fff !important;
+}
+
+.deleteButton {
+  color: #b4263d !important;
+}
+
+.form button:disabled,
+.recordTogether button:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+.help {
+  padding-left: 1px;
+}
+
+.error,
+.message,
+.loading {
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font-size: var(--text-label);
+  line-height: 1.5;
+}
+
+.error {
+  border-color: #e5b9c0;
+  color: #8c2638;
+}
+
+.message {
+  color: #3f5548;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--muted, #686a64);
+}
+
+.playerArea {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.recordTogether {
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.recordTogether > div {
+  min-width: 0;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.recordTogether p {
+  display: grid;
+  gap: 2px;
+}
+
+.recordTogether strong {
+  font-size: var(--text-label);
+}
+
+.empty {
+  padding: var(--space-4);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-control);
+  text-align: center;
+}
+
+.spin {
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 700px) {
+  .section {
+    padding: var(--space-3);
+  }
+
+  .settingsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .volumeField {
+    grid-column: 1 / -1;
+  }
+
+  .formActions button,
+  .recordTogether button {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 460px) {
+  .heading,
+  .recordTogether {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .settingsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .volumeField {
+    grid-column: auto;
+  }
+
+  .formActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .formActions button,
+  .recordTogether button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+}

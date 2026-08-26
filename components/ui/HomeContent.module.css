@@ -1,0 +1,718 @@
+.home {
+  width: min(var(--content-width), 100%);
+  margin: 0 auto;
+}
+
+.pageHeading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-bottom: var(--space-7);
+}
+
+.pageHeading h1 {
+  font-size: var(--text-display);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+}
+
+.pageHeading p {
+  margin-top: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.headingActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.activeFilter {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-xs);
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+.activeFilter:hover {
+  border-color: var(--ink-soft);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.section + .section {
+  margin-top: var(--space-8);
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.sectionHeading h2 {
+  font-size: var(--text-section);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.sectionHeading > a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--muted-strong);
+  font-size: var(--text-label);
+  font-weight: 500;
+}
+
+.sectionHeading > a:hover {
+  color: var(--ink);
+}
+
+.albumGallery {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: var(--space-5);
+  row-gap: var(--space-7);
+}
+
+.albumCard {
+  min-width: 0;
+}
+
+.albumArtworkLink {
+  display: block;
+  border-radius: 2px;
+}
+
+.albumArtwork {
+  position: relative;
+  aspect-ratio: 1.7;
+  overflow: hidden;
+  border-radius: 2px;
+  background: transparent;
+}
+
+.albumGuitar {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 92%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 10px rgb(34 29 25 / 10%));
+  transform: translateX(-50%);
+  transition: transform 220ms ease;
+}
+
+.albumArtworkLink:hover .albumGuitar {
+  transform: translateX(-50%) scale(1.015);
+}
+
+.albumInfo {
+  padding: var(--space-3) 0 0;
+}
+
+.albumTitleRow {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.albumTitleRow a {
+  overflow: hidden;
+  font-size: var(--text-subtitle);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.albumTitleRow span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+
+.albumInfo p {
+  margin-top: var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-label);
+}
+
+.albumList {
+  grid-template-columns: 1fr;
+  gap: 0;
+  border-block: 1px solid var(--line);
+}
+
+.albumCardList {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-3) var(--space-1);
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+
+.albumCardList:last-child {
+  border-bottom: 0;
+}
+
+.albumCardList .albumArtwork {
+  aspect-ratio: 1.35;
+}
+
+.albumCardList .albumInfo {
+  padding: 0 8px 0 0;
+}
+
+.riffList {
+  border-block: 1px solid var(--line);
+  background: transparent;
+}
+
+.riffRow {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 64px;
+  grid-template-columns: 38px minmax(160px, 1.5fr) minmax(120px, 0.75fr) 52px 98px 72px;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-1);
+  transition: background 150ms ease;
+}
+
+.riffRow + .riffRow {
+  border-top: 1px solid var(--line);
+}
+
+.riffRow:first-child {
+  border-radius: 0;
+}
+
+.riffRow:last-child {
+  border-radius: 0;
+}
+
+.riffRow:only-child {
+  border-radius: 0;
+}
+
+.riffRow:hover {
+  background: var(--surface-soft);
+}
+
+.riffPlay {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  padding-left: 2px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: white;
+}
+
+.riffIdentity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.riffIdentity a,
+.riffIdentity span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.riffIdentity a {
+  font-size: var(--text-body);
+  font-weight: 600;
+}
+
+.riffIdentity span,
+.riffSession,
+.riffDuration,
+.riffUpdated {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+
+.riffSubline {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  overflow: hidden;
+}
+
+.riffSubline > span:first-child {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.riffIdentity .riffTagLink {
+  flex: 0 0 auto;
+  max-width: 98px;
+  overflow: hidden;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.riffIdentity .riffTagLink:hover,
+.riffIdentity .riffTagLink:focus-visible {
+  border-color: var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.riffIdentity .riffTagMore {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+
+.riffSession {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.riffSession span {
+  padding: 4px 7px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-soft);
+  white-space: nowrap;
+}
+
+.riffDuration {
+  font-variant-numeric: tabular-nums;
+}
+
+.riffUpdated {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.favoriteActive {
+  color: var(--ink);
+}
+
+.riffActions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.favoriteButton,
+.menuButton {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--muted);
+}
+
+.favoriteButton:hover:not(:disabled),
+.menuButton:hover,
+.rowMenuOpen .menuButton {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.favoriteButton.favoriteActive {
+  color: var(--ink);
+}
+
+.rowMenu {
+  position: relative;
+}
+
+.rowMenuPanel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(268px, calc(100vw - 32px));
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: 0 16px 38px rgb(22 22 22 / 16%);
+}
+
+.duplicateMenuButton,
+.trashMenuButton {
+  display: flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--danger);
+  font-size: 12px;
+  text-align: left;
+}
+
+.duplicateMenuButton {
+  color: var(--ink-soft);
+}
+
+.duplicateMenuButton:hover:not(:disabled) {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.trashMenuButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+}
+
+.moveRiffSection {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 8px 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.moveRiffSection label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.moveRiffControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.moveRiffControls select {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0 30px 0 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-xs);
+  outline: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+
+.moveRiffControls select:focus {
+  border-color: var(--ink-soft);
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.rowMenuPanel .moveRiffButton,
+.rowMenuPanel .retryAlbumsButton {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.rowMenuPanel .moveRiffButton {
+  width: 54px;
+  padding: 0 10px;
+  background: var(--ink);
+  color: white;
+}
+
+.rowMenuPanel .retryAlbumsButton {
+  width: 100%;
+  padding: 0 12px;
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+}
+
+.rowMenuPanel .moveRiffButton:hover:not(:disabled) {
+  background: var(--ink-soft);
+}
+
+.rowMenuPanel .retryAlbumsButton:hover:not(:disabled) {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+.menuStatus {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.menuError {
+  margin: 5px 7px 3px;
+  color: var(--danger);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.actionError {
+  color: var(--danger);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.actionError {
+  position: absolute;
+  z-index: 22;
+  top: calc(100% + 6px);
+  right: 0;
+  width: max-content;
+  max-width: 220px;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--line));
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.trashedRiffRow {
+  grid-template-columns: 38px minmax(160px, 1.5fr) minmax(120px, 0.75fr) 110px minmax(88px, auto);
+}
+
+.trashRiffIcon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.riffIdentity strong {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.restoreAction {
+  position: relative;
+  justify-self: end;
+}
+
+.restoreAction button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.restoreAction button:hover:not(:disabled) {
+  border-color: var(--ink-soft);
+  color: var(--ink);
+}
+
+.restoreAction > span {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  width: max-content;
+  max-width: 220px;
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--line));
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--danger);
+  font-size: 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+.emptyState,
+.compactEmpty {
+  display: flex;
+  align-items: center;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+}
+
+.emptyState {
+  min-height: 250px;
+  grid-column: 1 / -1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+}
+
+.emptyIcon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  box-shadow: var(--shadow-xs);
+}
+
+.emptyState strong {
+  font-size: 14px;
+}
+
+.emptyState a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted-strong);
+  font-size: 12px;
+}
+
+.compactEmpty {
+  min-height: 82px;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.compactEmpty a {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+@media (max-width: 1140px) {
+  .albumGallery {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .riffRow {
+    grid-template-columns: 38px minmax(150px, 1.4fr) minmax(110px, 0.8fr) 52px 72px;
+  }
+
+  .riffUpdated {
+    display: none;
+  }
+
+  .trashedRiffRow {
+    grid-template-columns: 38px minmax(150px, 1fr) minmax(110px, 0.7fr) minmax(88px, auto);
+  }
+}
+
+@media (max-width: 780px) {
+  .albumGallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .riffRow {
+    grid-template-columns: 38px minmax(0, 1fr) 52px 72px;
+  }
+
+  .riffSession {
+    display: none;
+  }
+
+  .trashedRiffRow {
+    grid-template-columns: 38px minmax(0, 1fr) minmax(88px, auto);
+  }
+}
+
+@media (max-width: 520px) {
+  .pageHeading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .albumGallery {
+    grid-template-columns: 1fr;
+  }
+
+  .albumCard:not(.albumCardList) {
+    width: min(100%, 390px);
+  }
+
+  .albumArtwork {
+    aspect-ratio: 1.7;
+  }
+
+  .riffRow {
+    grid-template-columns: 38px minmax(0, 1fr) 68px;
+    gap: 11px;
+    padding-inline: 12px;
+  }
+
+  .riffDuration {
+    display: none;
+  }
+
+  .favoriteButton,
+  .menuButton {
+    width: 32px;
+    height: 38px;
+  }
+
+  .trashedRiffRow {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+  }
+
+  .restoreAction button span {
+    display: none;
+  }
+
+  .restoreAction button {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+}

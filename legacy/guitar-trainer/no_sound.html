@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>기타 뿌셔뿌셔</title>
+    <style>
+        /* ========================================================= */
+        /* === 통합된 CSS 변수 (리듬 스테이션 기준 테마 + 지판 고유 변수) === */
+        /* ========================================================= */
+        :root {
+            /* 리듬 스테이션 기본 테마 변수 (Dark Mode Default) */
+            --bg-primary: #020e16; 
+            --bg-panel: #1a1a3a; 
+            --text-main: #f0f0f0; 
+            --text-secondary: #aaaaaa; 
+            --color-panel-border: #3c3c6e; 
+            --color-input-bg: #2a2a4a; 
+            --color-accent: #87ceeb; /* Blue 테마 기본값 */
+            --color-highlight: #87ceeb; 
+            --color-indicator: #dc3545; 
+
+            /* 지판 시각화 고유 변수 */
+            --color-simple-other: #bbbbbb; 
+            --color-divider: #cccccc; 
+            
+            --color-root-highlight: #ff0055; 
+            --color-root-border: #ffffff;
+            
+            /* [수정 4] 통합 지판 범례/분할을 위한 색상 (5가지) */
+            --color-p1: #FFB347; /* Pastel Orange */
+            --color-p2: #87CEEB; /* Sky Blue */
+            --color-p3: #77DD77; /* Pastel Green */
+            --color-p4: #9370DB; /* Medium Purple */
+            --color-p5: #DDA0DD; /* Plum (Light Purple) */
+            
+            --fret-0-width: 40px; 
+            --fret-width: 60px; /* 수정 3: 스크롤 방지를 위해 폭 증가 (기존 55px) */
+            --dot-color: #ccc;
+        }
+
+        /* === 색상 테마 정의 (리듬 스테이션) === */
+        .theme-blue {
+            --color-accent: #87ceeb; 
+            --color-highlight: #87ceeb; 
+            --color-indicator: #3567dc; 
+        }
+        .instance-title{ display: none;}
+        /* === Light Mode Overrides (리듬 스테이션) === */
+        .light-mode {
+            --bg-primary: #f0f0f5; 
+            --bg-panel: #ffffff; 
+            --text-main: #333333;
+            --text-secondary: #666666;
+            --color-panel-border: #e0e0e0;
+            --color-input-bg: #f8f8f8;
+        }
+
+        /* ========================================================= */
+        /* === 리듬 스테이션 CSS 시작 === */
+        /* ========================================================= */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s;
+        }
+        .header {
+            width: 100%;
+            max-width: 960px;
+            justify-content: flex-start; 
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        h1 { color: var(--text-main); font-size: 2.2em; margin: 0; }
+        
+        /* 상단 컨테이너 (설정, 템포) */
+        .top-container {
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 20px; 
+            max-width: 960px;
+            width: 100%; 
+            justify-content: center; 
+            margin-bottom: 20px;
+        }
+        
+        .pattern-panel {
+            background-color: var(--bg-panel); border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); width: 100%;
+            max-width: 960px; margin: 0 auto 20px auto; transition: background-color 0.3s;
+        }
+        .panel {
+            background-color: var(--bg-panel); border-radius: 12px; padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); flex: 1; min-width: 280px;
+            transition: background-color 0.3s;
+        }
+        h2 {
+            color: var(--text-main); font-size: 1.4em; margin-top: 0;
+            margin-bottom: 20px; 
+            padding-bottom: 10px;
+        }
+        .setting-item { margin-bottom: 25px; }
+        button {
+            background-color: var(--color-accent); color: var(--bg-primary); 
+            border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer;
+            font-size: 1.1em;  transition: background-color 0.3s ease, opacity 0.2s;
+            width: 100%; margin-top: 10px;
+        }
+        button:hover { opacity: 0.9; }
+        .metronome-toggle-container {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 25px; padding: 10px 0;
+            border-top: 1px solid var(--color-panel-border);
+            border-bottom: 1px solid var(--color-panel-border);
+        }
+        .metronome-toggle-label { font-size: 1em; color: var(--text-main); font-weight: bold; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--color-panel-border); transition: .4s; border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--color-accent); }
+        input:checked + .slider:before { transform: translateX(26px); background-color: var(--bg-primary); }
+        .light-mode input:checked + .slider:before { background-color: var(--bg-panel); }
+        .swing-control { margin-bottom: 20px; padding-top: 5px; border-top: 1px solid var(--color-panel-border); }
+        .swing-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .swing-text-label { font-size: 0.95em; color: var(--text-main); font-weight: bold; }
+        .swing-percent { font-size: 1em; color: var(--text-main); font-weight: bold; }
+        .swing-slider-container { position: relative; margin-bottom: 15px; }
+        .swing-slider-container::after {
+            content: ''; position: absolute; top: 50%; left: calc(67% - 3px); 
+            transform: translate(-50%, -50%); width: 2px; height: 20px;
+            background-color: var(--color-panel-border); pointer-events: none; z-index: 10;
+        }
+        .swing-slider-labels {
+            display: flex; justify-content: space-between; font-size: 0.85em;
+            color: var(--text-secondary); margin-top: -10px; margin-bottom: 15px;
+        }
+        .swing-buttons {
+            display: flex; gap: 5px; background-color: var(--color-input-bg);
+            border-radius: 6px; padding: 5px; margin-bottom: 15px;
+        }
+        .swing-btn {
+            flex-grow: 1; padding: 8px 0; background-color: transparent;
+            color: var(--text-secondary); font-size: 0.9em; font-weight: normal;
+            border: none; transition: background-color 0.2s, color 0.2s; margin: 0; border-radius: 4px;
+        }
+        .swing-btn.active {
+            background-color: var(--color-accent); color: var(--bg-primary);
+            font-weight: bold; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .bpm-controls { display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px; }
+        .bpm-input-group { display: flex; align-items: center; gap: 0; width: 100%; border-radius: 6px; overflow: hidden; }
+        .bpm-input-group button {
+            width: 50px; padding: 10px 0; font-size: 1.5em; font-weight: normal;
+            margin: 0; flex-shrink: 0; background-color: var(--bg-panel); 
+            color: var(--text-main); border: none; transition: background-color 0.2s;
+        }
+        .bpm-input-group button:hover { background-color: var(--color-panel-border); }
+        .bpm-input-group input {
+            flex-grow: 1; text-align: center; font-size: 1.4em; font-weight: bold;
+            padding: 8px 5px; margin: 0; border-radius: 0; background-color: var(--bg-panel);
+            color: var(--text-main); border: none; min-width: 60px; box-sizing: border-box; 
+        }
+        #rhythm-tap-tempo-btn { margin-top: 0; background-color: var(--color-accent); color: var(--bg-primary); }
+        label { display: block; margin-bottom: 8px; font-size: 0.95em; color: var(--text-secondary); }
+        .meter-select, .theme-selector, .mode-selector {
+            width: 100%; padding: 10px 10px; border-radius: 6px;
+            border: 1px solid var(--color-panel-border); background-color: var(--color-input-bg);
+            color: var(--text-main); font-size: 1em; text-align: left;
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            background-repeat: no-repeat; background-position: right 10px top 50%;
+            background-size: 10px; padding-right: 25px;
+        }
+        input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="range"] {
+            width: 100%; -webkit-appearance: none; height: 6px;
+            background: var(--color-panel-border); border-radius: 3px;
+            outline: none; opacity: 1; transition: opacity .2s; margin: 10px 0;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 18px; height: 18px;
+            border-radius: 50%; background: var(--color-accent); cursor: pointer;
+        }
+        .slider-text-labels {
+            display: flex; justify-content: space-between; font-size: 0.85em;
+            color: var(--text-secondary); margin-top: 5px;
+        }
+        .play-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .play-buttons button { flex: 1; margin-top: 0; }
+        .pattern-display {
+            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px;
+            margin: 20px; align-items: flex-end;
+            -webkit-overflow-scrolling: touch;
+        }
+        .beat-group {
+            display: flex; flex-direction: column; align-items: center;
+            position: relative; flex-shrink: 0; padding: 5px; 
+        }
+        .subdivision-group { display: flex; gap: 4px; margin-top: 10px; }
+        .sub-beat {
+            width: 18px; height: 18px; border-radius: 4px;
+            background-color: var(--color-panel-border); cursor: pointer;
+            transition: background-color 0.2s, width 0.1s, height 0.1s, border-radius 0.1s;
+        }
+        .sub-beat.active { background-color: var(--color-accent); }
+        .sub-beat.sub-beat-3 { width: 12px; height: 12px; border-radius: 50%; background-color: var(--text-secondary); }
+        .sub-beat.sub-beat-3.active { background-color: var(--color-indicator); }
+        .sub-beat.current-16th { outline: 3px solid var(--color-indicator); outline-offset: 1px; }
+        .sub-beat.downbeat-16th { width: 22px; height: 22px; border-radius: 6px; }
+        .sub-beat.downbeat-16th.sub-beat-3 { width: 16px; height: 16px; border-radius: 50%; }
+        .beat-marker {
+            width: 100%; text-align: center; font-size: 0.9em;
+            color: var(--text-secondary); margin-bottom: 5px; font-weight: bold;
+            display:  none;
+        }
+
+        /* ========================================================= */
+        /* === 기타 지판 시각화 CSS === */
+        /* ========================================================= */
+        
+        #fretboard-collection {
+            width: 100%; max-width: 1500px;
+            flex-direction: column; gap: 30px; 
+        }
+
+        #combined-result-section {
+            width: 100%; max-width: 1500px;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 3px dashed var(--color-divider);
+        }
+        
+        .fretboard-instance {
+            background-color: var(--bg-panel); border-radius: 12px;
+            padding: 25px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%; position: relative; 
+        }
+        
+        .header-action-buttons {
+            display: flex; 
+            gap: 8px; 
+            position: absolute; 
+            top: 15px; 
+            right: 15px;
+            z-index: 20;
+        }
+        .instance-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; 
+            border-bottom: none; 
+            padding-bottom: 0;
+        }
+        .instance-header h2 { margin: 0; font-size: 1.5em; color: var(--color-accent); }
+
+        .fretboard-title-separator {
+            border: 0;
+            height: 1px;
+            background-color: var(--color-panel-border); 
+            margin: 0 0 20px 0;
+        }
+        
+        .remove-fretboard-btn {
+            background-color: transparent; 
+            color: var(--text-secondary); border: 1px solid var(--color-panel-border); 
+            padding: 4px 8px; border-radius: 4px; cursor: pointer;
+            font-size: 0.75em; transition: all 0.2s; width: auto; z-index: 20; opacity: 0.8;
+            margin-top:0px;
+        }
+
+        .fretboard-controls-panel { 
+            transition: max-height 0.4s ease-in-out, opacity 0.4s ease-in-out;
+            max-height: 1200px; overflow: hidden; opacity: 1; padding-top: 10px;
+        }
+        .fretboard-instance.compact-mode .fretboard-controls-panel {
+            max-height: 0; opacity: 0; margin-bottom: 0; padding: 0;
+        }
+        
+        .toggle-compact-btn {
+            background-color: var(--color-input-bg); 
+            color: var(--text-secondary); 
+            border: 1px solid var(--color-panel-border); 
+            padding: 4px 8px; border-radius: 4px; cursor: pointer;
+            font-size: 0.75em; transition: all 0.2s; width: auto; opacity: 0.8;
+            margin-top: 0; 
+        }
+
+        .fretboard-instance.compact-mode .toggle-compact-btn {
+            background-color: var(--color-accent);
+            color: white;
+            border-color: var(--color-accent);
+            font-weight: bold;
+            opacity: 1;
+        }
+        .button-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+        
+        .button-group button {
+            background-color: #f8f9fa; 
+            color: var(--text-main);
+            border: 1px solid var(--color-panel-border); 
+            padding: 8px 15px;
+            font-size: 0.9em; font-weight: normal; margin-top: 0; width: auto; 
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+        }
+        .button-group button:hover { background-color: #e9ecef; opacity: 1; }
+        .button-group button.active {
+            background-color: var(--color-accent); 
+            color: white;
+            border-color: var(--color-accent); 
+            font-weight: normal; 
+        }
+        
+        .color-mode-buttons button,
+        .mode-type-buttons button {
+            background-color: #f8f9fa;
+            color: var(--text-main);
+            border-color: var(--color-panel-border);
+        }
+        .color-mode-buttons button.active,
+        .mode-type-buttons button.active {
+             background-color: var(--color-accent);
+             color: white;
+             border-color: var(--color-accent);
+        }
+
+        .note-select-btn {
+            background-color: #ffffff; color: var(--text-main);
+            border: 2px solid var(--color-panel-border); min-width: 50px;
+        }
+        .note-select-btn.active { font-weight: bold; }
+
+        .fretboard-display {
+            width: 100%; overflow-x: hidden; 
+            border: 2px solid #555; 
+            border-radius: 4px; position: relative; height: 320px; 
+            display: flex; flex-direction: column; 
+        }
+        .fretboard-row { display: flex; width: fit-content; position: relative; height: calc(100% / 8); }
+        .number-row, .marker-row {
+            height: calc(100% / 8); 
+            min-height: 30px; 
+            align-items: center; 
+            font-size: 0.9em; 
+            color: var(--text-secondary);
+        }
+        .number-row { border-top: none; border-bottom: 1px solid #000000;} 
+        .marker-row { height: calc(100% / 8); min-height: 40px; }
+        .string-row { border-bottom: 1px solid #000000; align-items: center; height: calc(100% / 8); }
+        .string-row:last-child { border-bottom: none; }
+        
+        .fret-0-cell { 
+            position: relative; height: 100%; flex-basis: var(--fret-0-width); 
+            min-width: var(--fret-0-width); display: flex; justify-content: center;
+            align-items: center; box-sizing: border-box; border-right: 3px solid #333; 
+        }
+        .fret-cell {
+            position: relative; height: 100%; flex-basis: var(--fret-width); 
+            min-width: var(--fret-width); display: flex; justify-content: center;
+            align-items: center; box-sizing: border-box; border-right: 2px solid #333; 
+        }
+        .fretboard-row .fret-cell:nth-child(13) { border-right: 3px solid #333; }
+        .fret-marker-dot {
+            background: var(--dot-color); width: 8px; height: 8px;
+            border-radius: 50%; z-index: 5; position: relative; 
+        }
+        .marker-cell.double-marker { flex-direction: column; gap: 2px; }
+        
+        .note-dot {
+            width: 30px; height: 30px; border-radius: 50%; position: relative; 
+            z-index: 10; display: flex; justify-content: center; align-items: center;
+            color: black; font-weight: normal; font-size: 0.9em; cursor: default;
+        }
+        
+        .note-dot.root {
+            background-color: var(--color-highlight); 
+            border: 2px solid #3567dc; 
+            color: white; 
+            z-index: 20;
+        }
+        .note-dot.simple-other {
+            background-color: var(--color-simple-other); 
+            border: none; 
+            color: var(--text-main); 
+            font-weight: normal;
+        }
+        .note-dot.free-note { border: 1px solid var(--text-main); }
+        
+        .pattern-info {
+            margin-top: 15px; margin-bottom: 20px; padding: 10px; 
+            border: 1px solid var(--color-panel-border); border-radius: 8px; 
+            background-color: var(--color-input-bg); color: var(--text-main);
+        }
+        .pattern-info strong { color: var(--color-accent); }
+        .pattern-info span { font-family: sans-serif; font-size: 1.0em; margin-left: 10px; }
+        
+        .bottom-controls {
+            margin-top: 15px; 
+            display: flex; 
+            justify-content: flex-start;
+            align-items: center;
+            width: 100%;
+        }
+        .bottom-controls button {
+             padding: 8px 15px; border-radius: 6px; cursor: pointer;
+             font-size: 0.9em; margin-top: 0; width: auto;
+        }
+        .clear-btn { background-color: #f0f0f0; border: 1px solid var(--color-divider); color: var(--text-main); }
+        .toggle-compact-btn {
+            background-color: #ffc107; color: #333; border: none;
+        }
+
+        .fretboard-section-header {
+            margin-top: 50px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        .add-fretboard-buttons {
+            display: flex; gap: 15px; margin-top: 20px; margin-bottom: 20px;
+            max-width: 1300px; width: 100%;
+            justify-content: center; 
+        }
+        .add-fretboard-buttons button {
+            padding: 15px 30px; font-size: 1.2em; font-weight: bold;
+            border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s;
+            margin-top: 0; width: auto;
+        }
+        #fretboard-add-full-btn { background-color: var(--color-accent); color: white; }
+        #fretboard-add-full-btn:hover { opacity: 0.9; }
+
+        /* ========================================================= */
+        /* === RESPONSIVE DESIGN (반응형 추가 및 레이아웃 수정) === */
+        /* ========================================================= */
+        
+        @media (max-width: 768px) {
+            /* 1. 기본 레이아웃 및 여백 최적화 */
+            body { padding: 10px; }
+            .header { margin-bottom: 20px; }
+            h1 { font-size: 1.6em; }
+
+            /* [수정 5] 리듬 스테이션 수직 정렬 강제 (한 줄 배치) */
+            .top-container {
+                flex-direction: column; /* 세로 배치 */
+                gap: 15px; /* 패널 사이 간격 축소 */
+                align-items: stretch;
+            }
+            
+            /* 패널들이 작은 화면에서 꽉 차게, 여백 줄이기 */
+            .panel, .pattern-panel, .fretboard-instance {
+                width: 100%;
+                min-width: 0;
+                padding: 15px; /* 내부 여백 축소 (기존 25px -> 15px) */
+                box-sizing: border-box;
+                margin-bottom: 0; /* top-container의 gap으로 제어 */
+            }
+
+            /* [수정 5] 폰트 크기 다이어트 (모바일 최적화) */
+            h2 { font-size: 1.25em; margin-bottom: 15px; } /* 제목 크기 축소 */
+            
+            button {
+                font-size: 1em; /* 버튼 글자 크기 축소 */
+                padding: 10px 15px; /* 버튼 패딩 축소 */
+            }
+            
+            .bpm-input-group input {
+                font-size: 1.2em; /* BPM 숫자 크기 약간 축소 */
+            }
+            
+            .metronome-toggle-label, .swing-text-label, .swing-percent {
+                font-size: 0.9em;
+            }
+            
+            label { font-size: 0.9em; }
+            .meter-select { font-size: 0.95em; padding: 8px; }
+
+            /* 2. 리듬 스테이션 세부 반응형 */
+            .pattern-display {
+                margin: 10px 0;
+                padding-bottom: 5px;
+            }
+            .sub-beat {
+                width: 16px; height: 16px; /* 터치 타겟 유지 */
+            }
+            
+            /* 3. 기타 지판 반응형 (가로 스크롤 허용) */
+            .fretboard-display {
+                overflow-x: auto !important; 
+                -webkit-overflow-scrolling: touch; 
+            }
+            
+            /* 헤더의 버튼들이 타이틀과 겹치지 않도록 조정 */
+            .fretboard-instance {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .instance-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                margin-top: 35px; /* 상단 버튼 공간 확보 */
+            }
+            .instance-header h2 { font-size: 1.3em; }
+            
+            .header-action-buttons {
+                top: 15px;
+                right: 15px;
+                width: auto;
+            }
+            .header-action-buttons button {
+                font-size: 0.8em;
+                padding: 5px 10px;
+            }
+
+            .button-group button {
+                padding: 8px 10px;
+                font-size: 0.85em;
+                flex-grow: 1; /* 버튼들이 꽉 차게 */
+                justify-content: center;
+                display: flex;
+            }
+            
+            .root-note-buttons .root-btn {
+                min-width: 35px;
+                flex-grow: 0;
+            }
+
+            .slider-text-labels span { font-size: 0.75em; }
+        }
+
+        /* 아이폰 미니 등 초소형 화면 (375px 이하) 대응 */
+        @media (max-width: 380px) {
+            h1 { font-size: 1.4em; }
+            .header-action-buttons button {
+                padding: 4px 6px;
+                font-size: 0.7em;
+            }
+            .panel { padding: 12px; }
+        }
+
+    </style>
+</head>
+<body>
+    
+    <div class="header">
+        <h1 style="text-align: center;">기타 뿌시기</h1>
+    </div>
+
+    <div class="top-container">
+        <div class="panel">
+            <h2>리듬 생성 설정</h2>
+            <div class="setting-item">
+                <label for="rhythm-time-signature-select">박자 (Time Signature)</label>
+                <select id="rhythm-time-signature-select" class="meter-select">
+                    <option value="4/4">4/4 박자</option>
+                    <option value="3/4">3/4 박자</option>
+                    <option value="2/4">2/4 박자</option>
+                    <option value="6/8">6/8 박자</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label for="rhythm-syncopation-range">당김음(Syncopation) 레벨: <span id="rhythm-syncopation-value">5</span></label>
+                <input type="range" id="rhythm-syncopation-range" min="0" max="10" value="5">
+                <div class="slider-text-labels">
+                    <span>약함 (정박 위주)</span>
+                    <span>강함 (엇박 위주)</span>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label for="rhythm-difficulty-range">난이도 (16분 음표 빈도): <span id="rhythm-difficulty-value">5</span></label>
+                <input type="range" id="rhythm-difficulty-range" min="0" max="10" value="5">
+                <div class="slider-text-labels">
+                    <span>쉬움 (단순)</span>
+                    <span>어려움 (복잡)</span>
+                </div>
+            </div>
+            <button id="rhythm-generate-btn">리듬 생성</button>
+        </div>
+
+        <div class="panel">
+            <h2>Tempo</h2>
+            <div class="rhythm-bpm-controls bpm-controls">
+                <div class="bpm-input-group">
+                    <button id="rhythm-bpm-decrease">-</button>
+                    <input type="number" id="rhythm-bpm-input" value="120" min="40" max="240">
+                    <button id="rhythm-bpm-increase">+</button>
+                </div>
+                <button id="rhythm-tap-tempo-btn">Tap Tempo</button>
+            </div>
+            <div class="metronome-toggle-container">
+                <span class="metronome-toggle-label">메트로놈 켜기</span>
+                <label class="switch">
+                    <input type="checkbox" id="rhythm-metronome-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="swing-control">
+                <div class="swing-label-row">
+                    <span class="swing-text-label">Swing Amount</span>
+                    <span class="swing-percent" id="rhythm-swing-percent-value">0%</span>
+                </div>
+                <div class="swing-slider-container">
+                    <input type="range" id="rhythm-swing-amount" min="0" max="100" value="0"> </div>
+                <div class="swing-slider-labels">
+                    <span>Straight (0%)</span> <span>Triplet (67%)</span>
+                    <span>Hard Swing (100%)</span>
+                </div>
+                <div class="swing-buttons" id="rhythm-swing-mode-buttons">
+                    <button class="swing-btn active" data-swing-value="0">Straight</button> <button class="swing-btn" data-swing-value="67">Triplet</button>
+                    <button class="swing-btn" data-swing-value="100">Shuffle</button>
+                </div>
+            </div>
+            <div class="play-buttons">
+                <button id="rhythm-play-pause-btn">▶ Play</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="pattern-panel">
+        <h2 style="padding: 20px 20px 0 20px; margin-bottom: 0; border-bottom: none;">생성된 리듬 패턴</h2>
+        <div id="rhythm-pattern-display" class="pattern-display">
+            </div>
+    </div>
+
+    <div class="fretboard-section-header">
+        <h1>기타 지판 시각화 도구</h1>
+    </div>
+
+    <div class="add-fretboard-buttons">
+        <button id="fretboard-add-full-btn">입력 지판 추가 +</button>
+    </div>
+    
+    <div id="fretboard-collection">
+    </div>
+
+    <div id="combined-result-section" style="display:none;">
+        <div class="fretboard-instance">
+            <div class="instance-header">
+                <h2 style="color: var(--text-main);">🎸 통합 결과 지판 (Combined Result)</h2>
+            </div>
+            
+            <div id="combined-legend" class="pattern-info" style="margin-bottom: 20px;">
+                <strong>색상 범례 (Color Legend):</strong>
+                <div id="legend-items" style="display: flex; flex-wrap: wrap; gap: 15px 30px; margin-top: 10px;">
+                    </div>
+            </div>
+
+            <div class="pattern-info">
+                <strong>설명:</strong>
+                <span>위의 모든 입력 지판이 합쳐져서 보입니다. (수직 분할로 각 지판 색상 표시)</span>
+            </div>
+            <div id="combined-fretboard-display" class="fretboard-display">
+                </div>
+        </div>
+    </div>
+    
+    <template id="fretboard-template">
+        <div class="fretboard-instance">
+            <div class="header-action-buttons">
+                <button class="remove-fretboard-btn">삭제 (X)</button> 
+                <button class="toggle-compact-btn" data-compact-mode="false" style="width: auto;">설정 숨기기</button>
+            </div>
+            <div class="instance-header">
+                <h2 class="instance-title">🎸 입력 지판 #1</h2>
+            </div>
+            <!-- <hr class="fretboard-title-separator">  -->
+            
+            <div class="fretboard-controls-panel">
+                <div class="header-container">
+                    <h3 style="margin:0;">설정</h3>
+                </div>
+                <div class="control-group" style="margin-top: 15px;">
+                    <label style="font-weight: bold; margin-bottom: 10px; display: block;">색상 표시 모드:</label>
+                    <div class="button-group color-mode-buttons">
+                        <button class="color-mode-btn active" data-mode="simple">루트/기타(2색)</button>
+                        <button class="color-mode-btn" data-mode="individual">무지개(개별)</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label style="font-weight: bold; margin-bottom: 10px; display: block;">표시 텍스트 모드:</label>
+                    <div class="button-group display-mode-buttons">
+                        <button class="text-mode-btn active" data-mode="note">Note Name</button>
+                        <button class="text-mode-btn" data-mode="degree">Degree (도수)</button>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label style="font-weight: bold; margin-bottom: 10px; display: block;">표시 패턴 모드:</label>
+                    <div class="button-group pattern-mode-buttons">
+                        <button class="pattern-mode-btn active" data-mode="scale">스케일</button>
+                        <button class="pattern-mode-btn" data-mode="chord">코드</button>
+                        <button class="pattern-mode-btn" data-mode="free">프리 노트</button>
+                    </div>
+                </div>
+                <div class="control-group scale-controls">
+                    <label style="font-weight: bold; margin-bottom: 10px; display: block;">근음(Root Note) 선택:</label>
+                    <div class="button-group root-note-buttons horizontal-wrap">
+                        <button class="root-btn active" data-root="C">C</button>
+                        <button class="root-btn" data-root="C#">C#</button>
+                        <button class="root-btn" data-root="Db">Db</button>
+                        <button class="root-btn" data-root="D">D</button>
+                        <button class="root-btn" data-root="D#">D#</button>
+                        <button class="root-btn" data-root="Eb">Eb</button>
+                        <button class="root-btn" data-root="E">E</button>
+                        <button class="root-btn" data-root="F">F</button>
+                        <button class="root-btn" data-root="F#">F#</button>
+                        <button class="root-btn" data-root="Gb">Gb</button>
+                        <button class="root-btn" data-root="G">G</button>
+                        <button class="root-btn" data-root="G#">G#</button>
+                        <button class="root-btn" data-root="Ab">Ab</button>
+                        <button class="root-btn" data-root="A">A</button>
+                        <button class="root-btn" data-root="A#">A#</button>
+                        <button class="root-btn" data-root="Bb">Bb</button>
+                        <button class="root-btn" data-root="B">B</button>
+                    </div>
+                    <label style="font-weight: bold; margin: 15px 0 10px 0; display: block;">스케일 타입 선택:</label>
+                    <div class="button-group scale-type-buttons horizontal-wrap">
+                        <button class="scale-btn active" data-scale="Major">Major</button>
+                        <button class="scale-btn" data-scale="Natural Minor">Natural Minor</button>
+                        <button class="scale-btn" data-scale="Harmonic Minor">Harmonic Minor</button>
+                        <button class="scale-btn" data-scale="Melodic Minor">Melodic Minor</button>
+                        <button class="scale-btn" data-scale="Pentatonic Major">Pent. Major</button>
+                        <button class="scale-btn" data-scale="Pentatonic Minor">Pent. Minor</button>
+                        <button class="scale-btn" data-scale="Blues">Blues</button>
+                        <button class="scale-btn" data-scale="Dorian">Dorian</button>
+                        <button class="scale-btn" data-scale="Phrygian">Phrygian</button>
+                        <button class="scale-btn" data-scale="Lydian">Lydian</button>
+                        <button class="scale-btn" data-scale="Mixolydian">Mixolydian</button>
+                        <button class="scale-btn" data-scale="Locrian">Locrian</button>
+                        <button class="scale-btn" data-scale="Whole Tone">Whole Tone</button>
+                        <button class="scale-btn" data-scale="Diminished">Diminished</button>
+                        <button class="scale-btn" data-scale="Hungarian Minor">Hungarian Minor</button>
+                        <button class="scale-btn" data-scale="Persian">Persian</button>
+                    </div>
+                </div>
+                <div class="control-group chord-controls" style="display:none;">
+                    <label style="font-weight: bold; margin-bottom: 10px; display: block;">근음(Root Note) 선택:</label>
+                    <div class="button-group root-note-buttons horizontal-wrap">
+                        <button class="root-btn active" data-root="C">C</button>
+                         <button class="root-btn" data-root="C#">C#</button>
+                         <button class="root-btn" data-root="Db">Db</button>
+                         <button class="root-btn" data-root="D">D</button>
+                         <button class="root-btn" data-root="D#">D#</button>
+                         <button class="root-btn" data-root="Eb">Eb</button>
+                         <button class="root-btn" data-root="E">E</button>
+                         <button class="root-btn" data-root="F">F</button>
+                         <button class="root-btn" data-root="F#">F#</button>
+                         <button class="root-btn" data-root="Gb">Gb</button>
+                         <button class="root-btn" data-root="G">G</button>
+                         <button class="root-btn" data-root="G#">G#</button>
+                         <button class="root-btn" data-root="Ab">Ab</button>
+                         <button class="root-btn" data-root="A">A</button>
+                         <button class="root-btn" data-root="A#">A#</button>
+                         <button class="root-btn" data-root="Bb">Bb</button>
+                         <button class="root-btn" data-root="B">B</button>
+                    </div>
+                    <label style="font-weight: bold; margin: 15px 0 10px 0; display: block;">코드 타입 선택:</label>
+                    <div class="button-group chord-type-buttons horizontal-wrap">
+                        <button class="chord-btn active" data-chord="Major Triad">Major</button>
+                        <button class="chord-btn" data-chord="Minor Triad">Minor</button>
+                        <button class="chord-btn" data-chord="Augmented Triad">Augmented</button>
+                        <button class="chord-btn" data-chord="Diminished Triad">Diminished</button>
+                        <button class="chord-btn" data-chord="Major 7th">Maj7</button>
+                        <button class="chord-btn" data-chord="Minor 7th">m7</button>
+                        <button class="chord-btn" data-chord="Dominant 7th">Dom7</button>
+                        <button class="chord-btn" data-chord="Minor 7th flat 5">m7(b5)</button>
+                    </div>
+                </div>
+                <div class="control-group free-note-controls" style="display:none;">
+                    <label style="font-weight: bold; margin-bottom: 10px; display: block;">Free Note 선택:</label>
+                    <div class="button-group free-note-buttons horizontal-wrap">
+                    </div>
+                </div>
+                <div class="bottom-controls">
+                    <button class="clear-btn" data-target="free-notes" style="visibility: collapse;">선택 초기화</button>
+                </div>
+            </div>
+            <div class="pattern-info">
+                <strong>패턴 정보:</strong>
+                <span class="pattern-description-span">C Major</span>
+            </div>
+            <div id="fretboard-display" class="fretboard-display">
+            </div>
+        </div>
+    </template>
+    <script>
+        // =========================================================
+        // === RHYTHM STATION (index.html) 스크립트 (수정 없음) ===
+        // =========================================================
+        
+        const rhythmBPMInput = document.getElementById('rhythm-bpm-input');
+        const rhythmBPMIncreaseBtn = document.getElementById('rhythm-bpm-increase');
+        const rhythmBPMDecreaseBtn = document.getElementById('rhythm-bpm-decrease');
+        const rhythmTapTempoBtn = document.getElementById('rhythm-tap-tempo-btn');
+        const rhythmPlayPauseBtn = document.getElementById('rhythm-play-pause-btn');
+        const rhythmMetronomeToggle = document.getElementById('rhythm-metronome-toggle');
+        const rhythmTimeSignatureSelect = document.getElementById('rhythm-time-signature-select');
+        const rhythmSyncopationRange = document.getElementById('rhythm-syncopation-range');
+        const rhythmDifficultyRange = document.getElementById('rhythm-difficulty-range');
+        const rhythmGenerateBtn = document.getElementById('rhythm-generate-btn');
+        const rhythmPatternDisplay = document.getElementById('rhythm-pattern-display');
+        const rhythmSwingRange = document.getElementById('rhythm-swing-amount');
+        const rhythmSwingPercentValue = document.getElementById('rhythm-swing-percent-value');
+        const rhythmSwingButtonsContainer = document.getElementById('rhythm-swing-mode-buttons');
+        const rhythmSyncopationValueSpan = document.getElementById('rhythm-syncopation-value');
+        const rhythmDifficultyValueSpan = document.getElementById('rhythm-difficulty-value');
+
+        let rhythmAudioContext = null; 
+        let rhythmAudioContextInitialized = false; 
+        let rhythmTimerId = null;
+        let rhythmNextNoteTime = 0.0;
+        let rhythmCurrentBeat = 0;
+        let rhythmIsPlaying = false;
+        let rhythmBPM = 120;
+        let rhythmTimeSignature = '4/4';
+        let rhythmBeatsPerMeasure = 4;
+        let rhythmSubdivision = 4; 
+        let rhythmScheduleAheadTime = 0.1; 
+        let rhythmSwingAmount = 0; 
+        let rhythmPattern = [];
+        let rhythmIsMetronomeAlwaysOn = true;
+        let rhythmMetronomeOscillator = null;
+        let rhythmMetronomeGain = null;
+        
+        let rhythmAddHighlightSchedule = [];
+        let rhythmRemoveHighlightSchedule = [];
+
+        function rhythmInitAudio() {
+            if (rhythmAudioContextInitialized) return;
+            rhythmAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+            rhythmMetronomeOscillator = rhythmAudioContext.createOscillator();
+            rhythmMetronomeOscillator.type = 'square';
+            rhythmMetronomeOscillator.frequency.setValueAtTime(440, 0); 
+            rhythmMetronomeOscillator.start(0); 
+            rhythmMetronomeGain = rhythmAudioContext.createGain();
+            rhythmMetronomeGain.gain.setValueAtTime(0, 0); 
+            rhythmMetronomeOscillator.connect(rhythmMetronomeGain);
+            rhythmMetronomeGain.connect(rhythmAudioContext.destination);
+            rhythmAudioContextInitialized = true;
+        }
+
+        function rhythmScheduler() {
+            if (!rhythmAudioContextInitialized) return;
+            while (rhythmNextNoteTime < rhythmAudioContext.currentTime + rhythmScheduleAheadTime) {
+                const secondsPerBeat = 60.0 / rhythmBPM;
+                rhythmScheduleNote(rhythmCurrentBeat, rhythmNextNoteTime);
+                rhythmNextNoteTime += secondsPerBeat; 
+                rhythmCurrentBeat = (rhythmCurrentBeat + 1) % rhythmBeatsPerMeasure;
+            }
+            while (rhythmRemoveHighlightSchedule.length > 0 && rhythmRemoveHighlightSchedule[0].time < rhythmAudioContext.currentTime + rhythmScheduleAheadTime) {
+                const remove = rhythmRemoveHighlightSchedule.shift();
+                const targetElement = document.querySelector(`.sub-beat[data-sub-beat-index="${remove.index}"]`);
+                if (targetElement) targetElement.classList.remove('current-16th');
+            }
+            while (rhythmAddHighlightSchedule.length > 0 && rhythmAddHighlightSchedule[0].time < rhythmAudioContext.currentTime + rhythmScheduleAheadTime) {
+                const highlight = rhythmAddHighlightSchedule.shift();
+                const currentSubBeat = document.querySelector(`.sub-beat[data-sub-beat-index="${highlight.index}"]`);
+                if (currentSubBeat) currentSubBeat.classList.add('current-16th');
+            }
+            rhythmTimerId = window.setTimeout(rhythmScheduler, 25.0);
+        }
+        
+        function rhythmScheduleNote(beatNumber, scheduledTime) {
+            if (!rhythmAudioContextInitialized) return;
+            const secondsPerBeat = 60.0 / rhythmBPM;
+            const subBeatDuration = secondsPerBeat / rhythmSubdivision;
+            const actualSwingValue = Math.max(50, rhythmSwingAmount);
+            const swingRatio = (actualSwingValue - 50) / 50; 
+
+            for (let i = 0; i < rhythmSubdivision; i++) {
+                let noteTime = scheduledTime + subBeatDuration * i;
+                const patternIndex = (beatNumber * rhythmSubdivision + i) % rhythmPattern.length;
+                const isRhythmActive = rhythmPattern[patternIndex] === 1;
+                const globalSubBeatIndex = (beatNumber * rhythmSubdivision + i) % rhythmPattern.length;
+                
+                rhythmAddHighlightSchedule.push({ time: noteTime, index: globalSubBeatIndex });
+                rhythmRemoveHighlightSchedule.push({ time: noteTime + subBeatDuration, index: globalSubBeatIndex });
+
+                if (swingRatio > 0 && rhythmSubdivision === 4) {
+                    if (i % 2 === 1) {
+                        const eighthNoteStart = scheduledTime + subBeatDuration * (i - 1); 
+                        const longDuration = subBeatDuration * (1 + swingRatio);
+                        noteTime = eighthNoteStart + longDuration;
+                    }
+                }
+                const isBeatOne = (beatNumber === 0 && i === 0); 
+                const isSubBeatOne = (i === 0); 
+                if (isRhythmActive) {
+                    if (isBeatOne) rhythmPlayClick(noteTime, 880, 0.7); 
+                    else rhythmPlayClick(noteTime, 660, 0.6); 
+                } else if (rhythmIsMetronomeAlwaysOn) {
+                    if (isBeatOne) rhythmPlayClick(noteTime, 770, 0.65); 
+                    else if (isSubBeatOne) rhythmPlayClick(noteTime, 440, 0.4); 
+                }
+            }
+        }
+        
+        function rhythmPlayClick(time, frequency, volume) {
+            if (!rhythmAudioContextInitialized || !rhythmAudioContext) return;
+            const osc = rhythmAudioContext.createOscillator();
+            const gainNode = rhythmAudioContext.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(frequency, time);
+            osc.connect(gainNode);
+            gainNode.connect(rhythmAudioContext.destination);
+            gainNode.gain.setValueAtTime(volume, time);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.05); 
+            osc.start(time);
+            osc.stop(time + 0.05);
+        }
+
+        function rhythmTogglePlayPause() {
+            if (!rhythmAudioContextInitialized) rhythmInitAudio();
+            if (rhythmAudioContext.state === 'suspended') rhythmAudioContext.resume();
+            if (rhythmIsPlaying) {
+                window.clearInterval(rhythmTimerId);
+                rhythmIsPlaying = false;
+                rhythmPlayPauseBtn.textContent = "▶ Play";
+                if (rhythmMetronomeGain) rhythmMetronomeGain.gain.setValueAtTime(0, rhythmAudioContext.currentTime);
+                rhythmRemoveAllHighlights();
+                rhythmAddHighlightSchedule = []; rhythmRemoveHighlightSchedule = [];
+            } else {
+                rhythmIsPlaying = true;
+                rhythmPlayPauseBtn.textContent = "❚❚ Pause";
+                rhythmNextNoteTime = rhythmAudioContext.currentTime;
+                rhythmCurrentBeat = 0;
+                rhythmScheduler();
+            }
+        }
+
+        function rhythmUpdateBPM(newBPM) {
+            rhythmBPM = Math.max(40, Math.min(240, newBPM));
+            rhythmBPMInput.value = rhythmBPM;
+        }
+        function rhythmIncreaseBPM() { rhythmUpdateBPM(rhythmBPM + 5); }
+        function rhythmDecreaseBPM() { rhythmUpdateBPM(rhythmBPM - 5); }
+        function rhythmHandleTapTempo() {}
+        function rhythmHandleSwingSelection(value) {
+            rhythmSwingAmount = Math.max(0, Math.min(100, parseInt(value)));
+            rhythmSwingRange.value = rhythmSwingAmount;
+            rhythmSwingPercentValue.textContent = `${rhythmSwingAmount}%`;
+            rhythmSwingButtonsContainer.querySelectorAll('.swing-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (parseInt(btn.dataset.swingValue) === rhythmSwingAmount) btn.classList.add('active');
+            });
+        }
+        function rhythmHandleSwingButtonEvent(e) {
+            const btn = e.target.closest('.swing-btn');
+            if (btn) rhythmHandleSwingSelection(btn.dataset.swingValue);
+        }
+        function rhythmHandleSwingSliderEvent(e) { rhythmHandleSwingSelection(e.target.value); }
+        function rhythmRemoveAllHighlights() {
+            document.querySelectorAll('.sub-beat').forEach(b => b.classList.remove('current-16th'));
+            document.querySelectorAll('.beat-group').forEach(b => b.classList.remove('highlight-current-beat'));
+        }
+        function rhythmGenerateRhythm() {
+            const syncopationLevel = parseInt(rhythmSyncopationRange.value);
+            const difficultyLevel = parseInt(rhythmDifficultyRange.value);
+            const patternLength = rhythmBeatsPerMeasure * rhythmSubdivision;
+            let newPattern = new Array(patternLength).fill(0);
+            for (let i = 0; i < rhythmBeatsPerMeasure; i++) {
+                if (Math.random() > 0.3 * (syncopationLevel / 10)) newPattern[i * rhythmSubdivision] = 1;
+            }
+            for (let i = 0; i < patternLength; i++) {
+                if (i % rhythmSubdivision !== 0 && newPattern[i] === 0) {
+                    const probability = difficultyLevel * 0.05;
+                    if (Math.random() < probability) {
+                        if (rhythmSubdivision === 4 && i % 2 === 1) {
+                            if (newPattern[i - 1] === 1) newPattern[i] = 1;
+                        } else newPattern[i] = 1;
+                    }
+                }
+            }
+            rhythmPattern = newPattern;
+            rhythmDisplayPattern(rhythmPattern);
+        }
+        function rhythmDisplayPattern(pattern) {
+            const patternDisplay = rhythmPatternDisplay;
+            patternDisplay.innerHTML = '';
+            const beats = pattern.length / rhythmSubdivision;
+            const isTriplet = rhythmSubdivision === 3;
+            let globalIndex = 0; 
+            for (let b = 0; b < beats; b++) {
+                const beatGroup = document.createElement('div');
+                beatGroup.className = 'beat-group';
+                beatGroup.dataset.beatIndex = b; 
+                const marker = document.createElement('div');
+                marker.className = 'beat-marker';
+                marker.textContent = b + 1;
+                if (b === 0) marker.classList.add('first-beat');
+                beatGroup.appendChild(marker);
+                const subdivisionGroup = document.createElement('div');
+                subdivisionGroup.className = 'subdivision-group';
+                for (let s = 0; s < rhythmSubdivision; s++) {
+                    const subBeat = document.createElement('div');
+                    subBeat.className = 'sub-beat';
+                    subBeat.dataset.subBeatIndex = globalIndex++; 
+                    if (isTriplet) subBeat.classList.add('sub-beat-3');
+                    if (s === 0) subBeat.classList.add('downbeat-16th');
+                    if (pattern[b * rhythmSubdivision + s] === 1) subBeat.classList.add('active');
+                    subBeat.addEventListener('click', () => {
+                        const index = parseInt(subBeat.dataset.subBeatIndex);
+                        rhythmPattern[index] = rhythmPattern[index] === 1 ? 0 : 1;
+                        subBeat.classList.toggle('active');
+                    });
+                    subdivisionGroup.appendChild(subBeat);
+                }
+                beatGroup.appendChild(subdivisionGroup);
+                patternDisplay.appendChild(beatGroup);
+            }
+        }
+        function rhythmUpdateTheme(selectedTheme, selectedMode) {
+            const body = document.body;
+            body.classList.remove('dark-mode', 'light-mode');
+            body.classList.remove('theme-blue');
+            body.classList.add(`theme-${selectedTheme}`);
+            if (selectedMode === 'light') body.classList.add('light-mode');
+            else body.classList.add('dark-mode');
+        }
+
+        rhythmPlayPauseBtn.addEventListener('click', rhythmTogglePlayPause);
+        rhythmBPMIncreaseBtn.addEventListener('click', rhythmIncreaseBPM);
+        rhythmBPMDecreaseBtn.addEventListener('click', rhythmDecreaseBPM);
+        rhythmGenerateBtn.addEventListener('click', rhythmGenerateRhythm);
+        rhythmTapTempoBtn.addEventListener('click', rhythmHandleTapTempo);
+        rhythmMetronomeToggle.addEventListener('change', (e) => { rhythmIsMetronomeAlwaysOn = e.target.checked; });
+        rhythmBPMInput.addEventListener('change', (e) => {
+            rhythmUpdateBPM(parseInt(e.target.value));
+            if (rhythmIsPlaying) { rhythmTogglePlayPause(); rhythmTogglePlayPause(); }
+        });
+        rhythmSwingButtonsContainer.addEventListener('click', rhythmHandleSwingButtonEvent);
+        rhythmSwingRange.addEventListener('input', rhythmHandleSwingSliderEvent);
+        rhythmSwingRange.addEventListener('change', rhythmHandleSwingSliderEvent);
+        rhythmTimeSignatureSelect.addEventListener('change', (e) => {
+            rhythmTimeSignature = e.target.value;
+            const [numerator, denominator] = rhythmTimeSignature.split('/').map(Number);
+            rhythmBeatsPerMeasure = numerator;
+            rhythmSubdivision = (denominator === 8) ? 3 : 4; 
+            rhythmGenerateRhythm();
+        });
+        rhythmSyncopationRange.addEventListener('input', (e) => { rhythmSyncopationValueSpan.textContent = e.target.value; });
+        rhythmDifficultyRange.addEventListener('input', (e) => { rhythmDifficultyValueSpan.textContent = e.target.value; });
+
+        // =========================================================
+        // === FRETBOARD VISUALIZER (index2.html) 스크립트 ===
+        // =========================================================
+        
+        // [FRETBOARD] CONSTANTS
+        const fretboardTotalFrets = 24; // [수정 4] 24프렛으로 수정
+        const fretboardOpenStrings = [4, 11, 7, 2, 9, 4]; // E A D G B E
+        const fretboardSharpNoteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        const fretboardFlatNoteNames = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+        const fretboardAllNoteNames = ["C", "C# / Db", "D", "D# / Eb", "E", "F", "F# / Gb", "G", "G# / Ab", "A", "A# / Bb", "B"];
+        const fretboardFlatRoots = ["Db", "Eb", "Gb", "Ab", "Bb", "F"]; 
+        const fretboardNoteIndices = { "C": 0, "C#": 1, "Db": 1, "D": 2, "D#": 3, "Eb": 3, "E": 4, "F": 5, "F#": 6, "Gb": 6, "G": 7, "G#": 8, "Ab": 8, "A": 9, "A#": 10, "Bb": 10, "B": 11 };
+        
+        // [수정 1] 파스텔톤 개별 음 색상 (Pastel Tones)
+        const fretboardNoteColors = {
+            0: "#ADD8E6", // C - Light Blue (Pastel)
+            1: "#B0E0E6", // C#/Db - Powder Blue
+            2: "#F0E68C", // D - Light Khaki (Pastel Yellow)
+            3: "#F8F8FF", // D#/Eb - Ghost White (Very light)
+            4: "#98FB98", // E - Pale Green (Pastel)
+            5: "#DDA0DD", // F - Plum (Light Purple)
+            6: "#FFDAB9", // F#/Gb - Peach Puff (Pastel Orange)
+            7: "#FFB347", // G - Pastel Orange (Slightly darker for G)
+            8: "#FF6961", // G#/Ab - Light Coral (Pastel Red/Pink)
+            9: "#FFC0CB", // A - Pink (Pastel)
+            10: "#AEC6E6", // A#/Bb - Light Blue (Pastel)
+            11: "#C6AEC7"  // B - Pastel Lavender
+        };
+
+        const fretboardFunctionalDegreeNames = { 0: "R", 1: "b2", 2: "2", 3: "b3", 4: "3", 5: "4", 6: "#4/b5", 7: "5", 8: "b6", 9: "6", 10: "b7", 11: "7" };
+
+        const fretboardSCALE_INTERVALS = { 
+            "Major": [0, 2, 4, 5, 7, 9, 11], 
+            "Natural Minor": [0, 2, 3, 5, 7, 8, 10], 
+            "Harmonic Minor": [0, 2, 3, 5, 7, 8, 11],
+            "Melodic Minor": [0, 2, 3, 5, 7, 9, 11],
+            "Pentatonic Major": [0, 2, 4, 7, 9], 
+            "Pentatonic Minor": [0, 3, 5, 7, 10], 
+            "Blues": [0, 3, 5, 6, 7, 10], 
+            "Dorian": [0, 2, 3, 5, 7, 9, 10], 
+            "Phrygian": [0, 1, 3, 5, 7, 8, 10], 
+            "Lydian": [0, 2, 4, 6, 7, 9, 11], 
+            "Mixolydian": [0, 2, 4, 5, 7, 9, 10], 
+            "Locrian": [0, 1, 3, 5, 6, 8, 10], 
+            "Whole Tone": [0, 2, 4, 6, 8, 10],
+            "Diminished": [0, 2, 3, 5, 6, 8, 9, 11],
+            "Hungarian Minor": [0, 2, 3, 6, 7, 8, 11],
+            "Persian": [0, 1, 4, 5, 6, 8, 11]
+        };
+
+        const fretboardCHORD_INTERVALS = { "Major Triad": [0, 4, 7], "Minor Triad": [0, 3, 7], "Augmented Triad": [0, 4, 8], "Diminished Triad": [0, 3, 6], "Major 7th": [0, 4, 7, 11], "Minor 7th": [0, 3, 7, 10], "Dominant 7th": [0, 4, 7, 10], "Minor 7th flat 5": [0, 3, 6, 10] };
+
+        // DOM References
+        const fretboardCollection = document.getElementById('fretboard-collection');
+        const fretboardTemplate = document.getElementById('fretboard-template');
+        const fretboardAddFullBtn = document.getElementById('fretboard-add-full-btn');
+        const combinedResultSection = document.getElementById('combined-result-section');
+        const combinedResultDisplay = document.getElementById('combined-fretboard-display');
+        
+        let fretboardNextId = 1;
+        let fretboardInstances = {};
+
+        // [FRETBOARD] HELPER FUNCTIONS
+        function fretboardGetPatternIntervals(mode, type) {
+            if (mode === 'scale') {
+                return fretboardSCALE_INTERVALS[type] || [];
+            }
+            if (mode === 'chord') {
+                return fretboardCHORD_INTERVALS[type] || [];
+            }
+            return [];
+        }
+
+        function fretboardGetPatternDegreeName(interval, patternName) {
+            let label = fretboardFunctionalDegreeNames[interval] || '';
+            if (patternName.includes("Minor") || patternName === "Dorian" || patternName === "Phrygian" || patternName === "Locrian") {
+                if (interval === 3) label = 'm3';
+                if (interval === 10) label = 'm7';
+            }
+            return label;
+        }
+
+        function deleteFretboardInstance(id) {
+            const instance = fretboardInstances[id];
+            if (instance) {
+                instance.rootElement.remove();
+                delete fretboardInstances[id];
+            }
+            reindexFretboards();
+            fretboardUpdateCombinedView(); 
+        }
+
+        function reindexFretboards() {
+            const keys = Object.keys(fretboardInstances).map(Number).sort((a, b) => a - b);
+            const newInstances = {};
+            
+            keys.forEach((oldId, index) => {
+                const newId = index + 1;
+                const instance = fretboardInstances[oldId];
+                
+                instance.id = newId;
+                instance.dom.instanceTitle.textContent = `🎸 입력 지판 #${newId}`;
+                instance.rootElement.id = `fretboard-instance-${newId}`;
+                
+                newInstances[newId] = instance;
+            });
+            
+            fretboardInstances = newInstances;
+            fretboardNextId = keys.length + 1;
+        }
+        
+        function fretboardUpdateCombinedView() {
+            const ids = Object.keys(fretboardInstances).map(Number).sort((a, b) => a - b);
+            const legendItemsContainer = document.getElementById('legend-items');
+
+            if (ids.length === 0) {
+                combinedResultSection.style.display = 'none';
+                legendItemsContainer.innerHTML = '';
+                return;
+            }
+            
+            combinedResultSection.style.display = 'block';
+            combinedResultDisplay.innerHTML = ''; 
+            legendItemsContainer.innerHTML = ''; 
+
+            // 1. 범례 생성 (Legend)
+            ids.forEach((id, idx) => {
+                const inst = fretboardInstances[id];
+                const patternTitle = inst.getPatternTitle();
+                const colorIndex = (idx % 5) + 1;
+                const colorVar = `--color-p${colorIndex}`;
+                
+                const legendItem = document.createElement('span');
+                legendItem.style.display = 'flex';
+                legendItem.style.alignItems = 'center';
+                legendItem.style.fontSize = '0.9em';
+                legendItem.style.color = 'var(--text-main)';
+                
+                const colorDot = document.createElement('div');
+                colorDot.style.width = '12px';
+                colorDot.style.height = '12px';
+                colorDot.style.borderRadius = '50%';
+                colorDot.style.backgroundColor = `var(${colorVar})`;
+                colorDot.style.marginRight = '8px';
+                
+                legendItem.appendChild(colorDot);
+                legendItem.append(document.createTextNode(`${inst.dom.instanceTitle.textContent}: ${patternTitle}`));
+                
+                legendItemsContainer.appendChild(legendItem);
+            });
+
+
+            // 2. 지판 렌더링 (Fretboard)
+            renderFretboardGrid(combinedResultDisplay, (stringIndex, fretIndex) => {
+                const noteIndex = (fretboardOpenStrings[stringIndex] + fretIndex) % 12;
+                let activeSources = []; 
+
+                ids.forEach((id, idx) => {
+                    const inst = fretboardInstances[id];
+                    const data = inst.generatePatternData();
+                    let hasNote = false;
+
+                    if (data.patternType === 'free') {
+                        if (data.selectedFreeNotes.has(noteIndex)) hasNote = true;
+                    } else {
+                        const interval = (noteIndex - data.rootIndex + 12) % 12;
+                        if (data.intervals.includes(interval)) hasNote = true;
+                    }
+
+                    if (hasNote) {
+                        activeSources.push({
+                            sourceId: id, 
+                            colorVar: `--color-p${(idx % 5) + 1}`
+                        });
+                    }
+                });
+
+                if (activeSources.length === 0) return null; 
+
+                const dotDiv = document.createElement('div');
+                let classes = ['note-dot'];
+                let label = fretboardSharpNoteNames[noteIndex];
+                
+                dotDiv.className = classes.join(' ');
+                dotDiv.textContent = label;
+                dotDiv.style.color = 'white';
+                // dotDiv.style.fontWeight = 'bold';
+                // dotDiv.style.textShadow = '0 0 2px black';
+
+                // 수직 등분 (Linear Gradient)
+                if (activeSources.length === 1) {
+                    dotDiv.style.backgroundColor = `var(${activeSources[0].colorVar})`;
+                } else {
+                    let gradientStops = [];
+                    const count = activeSources.length;
+                    activeSources.sort((a, b) => a.sourceId - b.sourceId);
+
+                    activeSources.forEach((src, i) => {
+                        const startPct = (i / count) * 100;
+                        const endPct = ((i + 1) / count) * 100;
+                        gradientStops.push(`var(${src.colorVar}) ${startPct}% ${endPct}%`);
+                    });
+                    dotDiv.style.background = `linear-gradient(to right, ${gradientStops.join(', ')})`;
+                }
+
+                return dotDiv;
+            });
+        }
+        
+        function renderFretboardGrid(container, getDotContentCallback) {
+            const numberRow = document.createElement('div');
+            numberRow.className = 'fretboard-row number-row';
+            const markerRow = document.createElement('div');
+            markerRow.className = 'fretboard-row marker-row';
+            
+            numberRow.appendChild(document.createElement('div')).className = 'fret-0-cell';
+            markerRow.appendChild(document.createElement('div')).className = 'fret-0-cell';
+            
+            container.appendChild(numberRow);
+            for (let f = 1; f <= fretboardTotalFrets; f++) { // [수정 4] fretboardTotalFrets에 맞춰 24프렛까지 렌더링
+                const numberCell = document.createElement('div');
+                numberCell.className = 'fret-cell';
+                numberCell.textContent = f;
+                numberRow.appendChild(numberCell);
+                
+                const markerCell = document.createElement('div');
+                markerCell.className = 'fret-cell marker-cell';
+                if ([3,5,7,9,15,17,19,21].includes(f)) markerCell.appendChild(document.createElement('div')).className = 'fret-marker-dot';
+                else if ([12,24].includes(f)) { // 24프렛 마커 처리
+                    markerCell.classList.add('double-marker');
+                    markerCell.appendChild(document.createElement('div')).className = 'fret-marker-dot';
+                    markerCell.appendChild(document.createElement('div')).className = 'fret-marker-dot';
+                }
+                markerRow.appendChild(markerCell);
+            }
+
+            // [수정 3] String Rows 먼저 렌더링
+            for (let s = 0; s < fretboardOpenStrings.length; s++) {
+                const stringRow = document.createElement('div');
+                stringRow.className = 'fretboard-row string-row';
+
+                let dotDiv = getDotContentCallback(s, 0);
+                const fret0Cell = document.createElement('div');
+                fret0Cell.className = 'fret-0-cell fret-space';
+                if (dotDiv) fret0Cell.appendChild(dotDiv);
+                stringRow.appendChild(fret0Cell);
+
+                for (let f = 1; f <= fretboardTotalFrets; f++) { // [수정 4] fretboardTotalFrets에 맞춰 24프렛까지 렌더링
+                    dotDiv = getDotContentCallback(s, f);
+                    const fretCell = document.createElement('div');
+                    fretCell.className = 'fret-cell fret-space';
+                    if (dotDiv) fretCell.appendChild(dotDiv);
+                    stringRow.appendChild(fretCell);
+                }
+                container.appendChild(stringRow);
+            }
+            
+            // [수정 3] Marker Row와 Number Row를 가장 아래에 배치
+            container.appendChild(markerRow); 
+        }
+
+
+        // [FRETBOARD] CLASS DEFINITION
+        class FretboardInstance {
+            constructor(id) {
+                this.id = id;
+                this.rootElement = this.createInstanceElement();
+                this.dom = this.getDomReferences();
+                this.rootNote = 'C';
+                this.scaleType = 'Major';
+                this.displayMode = 'note';
+                this.patternMode = 'scale';
+                this.chordType = 'Major Triad';
+                this.colorMode = 'simple'; 
+                this.selectedFreeNotes = new Set();
+                
+                this.createFreeNoteButtons(); 
+                this.attachEventListeners();
+                
+                this.dom.instanceTitle.textContent = `🎸 입력 지판 #${this.id}`;
+                fretboardInstances[this.id] = this;
+            }
+
+            createInstanceElement() {
+                const clone = fretboardTemplate.content.cloneNode(true);
+                const instanceDiv = clone.querySelector('.fretboard-instance');
+                instanceDiv.id = `fretboard-instance-${this.id}`; 
+                const removeBtn = instanceDiv.querySelector('.remove-fretboard-btn');
+                removeBtn.addEventListener('click', () => deleteFretboardInstance(this.id)); 
+                return instanceDiv;
+            }
+
+            getDomReferences() {
+                const root = this.rootElement;
+                return {
+                    root: root,
+                    instanceTitle: root.querySelector('.instance-title'),
+                    fretboardDisplay: root.querySelector('#fretboard-display'),
+                    patternInfoSpan: root.querySelector('.pattern-description-span'),
+                    removeBtn: root.querySelector('.remove-fretboard-btn'),
+                    
+                    controlsPanel: root.querySelector('.fretboard-controls-panel'),
+                    toggleCompactBtn: root.querySelector('.toggle-compact-btn'),
+                    patternModeButtons: root.querySelector('.pattern-mode-buttons'),
+                    textModeButtons: root.querySelector('.display-mode-buttons'),
+                    colorModeButtons: root.querySelector('.color-mode-buttons'), 
+                    scaleControls: root.querySelector('.scale-controls'),
+                    chordControls: root.querySelector('.chord-controls'),
+                    freeNoteControls: root.querySelector('.free-note-controls'),
+                    
+                    scaleRootNoteButtons: root.querySelector('.scale-controls .root-note-buttons'),
+                    chordRootNoteButtons: root.querySelector('.chord-controls .root-note-buttons'),
+                    scaleTypeButtons: root.querySelector('.scale-type-buttons'),
+                    chordTypeButtons: root.querySelector('.chord-type-buttons'),
+                    freeNoteButtonsContainer: root.querySelector('.free-note-buttons'),
+                    clearFreeNoteBtn: root.querySelector('.clear-btn[data-target="free-notes"]'),
+                };
+            }
+
+            getPatternTitle() {
+                if (this.patternMode === 'free') {
+                    const notes = Array.from(this.selectedFreeNotes).map(index => {
+                        return fretboardAllNoteNames[index];
+                    });
+                    return `Free Notes: ${notes.join(', ')}`;
+                }
+
+                let type = this.patternMode === 'scale' ? this.scaleType : this.chordType;
+                let intervals = fretboardGetPatternIntervals(this.patternMode, type);
+                let rootIndex = fretboardNoteIndices[this.rootNote];
+                let noteNames = intervals.map(interval => {
+                    let idx = (rootIndex + interval) % 12;
+                    return fretboardFlatRoots.includes(this.rootNote) ? fretboardFlatNoteNames[idx] : fretboardSharpNoteNames[idx];
+                });
+                let degrees = intervals.map(interval => fretboardGetPatternDegreeName(interval, type));
+                return `${this.rootNote} ${type} : ${noteNames.join(', ')} (${degrees.join(', ')})`;
+            }
+
+            generatePatternData() {
+                const isScale = this.patternMode === 'scale';
+                const type = isScale ? this.scaleType : this.chordType;
+                return {
+                    patternType: this.patternMode,
+                    scaleType: isScale ? this.scaleType : null,
+                    chordType: isScale ? null : this.chordType,
+                    rootNote: this.rootNote,
+                    rootIndex: fretboardNoteIndices[this.rootNote],
+                    intervals: this.patternMode === 'free' ? [] : fretboardGetPatternIntervals(this.patternMode, type),
+                    selectedFreeNotes: this.selectedFreeNotes,
+                };
+            }
+
+            getNoteLabelAndClass(noteIndex, patternIntervals) {
+                const rootIndex = fretboardNoteIndices[this.rootNote];
+                let interval = (noteIndex - rootIndex + 12) % 12;
+                let label, cssClass = '';
+
+                if (this.displayMode === 'note') {
+                    const useFlat = fretboardFlatRoots.includes(this.rootNote);
+                    label = useFlat ? fretboardFlatNoteNames[noteIndex] : fretboardSharpNoteNames[noteIndex];
+                } else {
+                    if (this.patternMode === 'free') label = '◉';
+                    else label = fretboardGetPatternDegreeName(interval, this.patternMode === 'scale' ? this.scaleType : this.chordType);
+                }
+
+                if (interval === 0 && this.patternMode !== 'free') cssClass = 'root';
+                else if (patternIntervals.includes(interval)) cssClass = 'other-note';
+                else if (this.patternMode === 'free' && this.selectedFreeNotes.has(noteIndex)) cssClass = 'other-note';
+                else {
+                    cssClass = 'free-note';
+                    label = this.displayMode === 'note' ? label : ''; 
+                }
+                
+                if (this.patternMode !== 'free' && !patternIntervals.includes(interval)) label = '';
+
+                return { label: label, cssClass: cssClass };
+            }
+
+            renderCurrentPattern() {
+                const data = this.generatePatternData();
+                this.dom.patternInfoSpan.textContent = this.getPatternTitle();
+                this.dom.fretboardDisplay.innerHTML = '';
+
+                renderFretboardGrid(this.dom.fretboardDisplay, (stringIndex, fretIndex) => {
+                    const noteIndex = (fretboardOpenStrings[stringIndex] + fretIndex) % 12;
+                    let hasNote = false;
+                    let isRoot = false;
+
+                    if (this.patternMode === 'free') {
+                        if (this.selectedFreeNotes.has(noteIndex)) hasNote = true;
+                    } else {
+                        const interval = (noteIndex - data.rootIndex + 12) % 12;
+                        if (data.intervals.includes(interval)) hasNote = true;
+                        if (interval === 0) isRoot = true;
+                    }
+
+                    if (!hasNote) return null;
+
+                    const noteInfo = this.getNoteLabelAndClass(noteIndex, data.intervals);
+                    const dotDiv = document.createElement('div');
+                    
+                    let classes = ['note-dot'];
+                    
+                    // [수정 1] 개별 색상 모드 로직
+                    if (this.colorMode === 'individual') {
+                        // isRoot 여부에 따라 다른 스타일을 적용하되, 기본적으로 인라인 스타일로 덮어씀
+                        if (isRoot) {
+                            classes.push('root'); // CSS의 .root 스타일 유지 (진한 색상)
+                        } else {
+                            // 단순 노트 클래스는 제거하여 CSS 기본값 적용 방지
+                            dotDiv.style.backgroundColor = fretboardNoteColors[noteIndex];
+                            dotDiv.style.border = 'none'; 
+                            dotDiv.style.color = 'black'; // 파스텔톤 배경 대비 검은색 텍스트
+                            dotDiv.style.textShadow = 'none';
+                        }
+                    } else {
+                        // simple mode (기존 CSS 클래스 사용)
+                        if (isRoot) classes.push('root');
+                        else classes.push('simple-other');
+                        dotDiv.style.backgroundColor = ''; // 인라인 스타일 초기화
+                        dotDiv.style.color = '';
+                        dotDiv.style.textShadow = '';
+                    }
+                    
+                    dotDiv.className = classes.join(' ');
+                    dotDiv.textContent = noteInfo.label;
+
+                    if (this.patternMode === 'free') {
+                        dotDiv.style.cursor = 'pointer';
+                    }
+                    return dotDiv;
+                });
+                
+                this.dom.fretboardDisplay.onclick = (e) => {
+                    if (this.patternMode !== 'free') return;
+                    let target = e.target.closest('.fret-space');
+                    if (!target) return;
+                    const parentRow = target.parentElement;
+                    const rowIndex = Array.from(this.dom.fretboardDisplay.children).indexOf(parentRow);
+                    if (rowIndex < 0) return; // numberRow나 markerRow 등은 무시
+                    
+                    // [수정 3] MarkerRow와 NumberRow가 마지막에 추가되었으므로, String Row의 인덱스는 총 row 개수 - 2 - s(6)
+                    let totalRows = this.dom.fretboardDisplay.children.length;
+                    let numStringRows = fretboardOpenStrings.length; // 6
+                    
+                    // String row는 첫 번째부터 여섯 번째까지 (인덱스 0~5)에 위치함
+                    let stringRowIndex = rowIndex;
+                    
+                    // 클릭된 요소가 String Row인지 확인 (0부터 5 사이의 인덱스)
+                    if (stringRowIndex < 0 || stringRowIndex >= numStringRows) return; 
+                    
+                    const stringIndex = stringRowIndex;
+                    const fretIndex = Array.from(parentRow.children).indexOf(target);
+
+                    this.handleFretClick(stringIndex, fretIndex);
+                };
+            }
+
+            handleFretClick(stringIndex, fretIndex) {
+                const noteIndex = (fretboardOpenStrings[stringIndex] + fretIndex) % 12;
+                if (this.selectedFreeNotes.has(noteIndex)) this.selectedFreeNotes.delete(noteIndex);
+                else this.selectedFreeNotes.add(noteIndex);
+                
+                this.dom.freeNoteButtonsContainer.querySelectorAll('.note-select-btn').forEach(btn => {
+                    const btnNoteIndex = parseInt(btn.dataset.noteIndex);
+                    if (this.selectedFreeNotes.has(btnNoteIndex)) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                });
+                
+                this.renderCurrentPattern();
+                fretboardUpdateCombinedView();
+            }
+            
+            createFreeNoteButtons() {
+                const container = this.dom.freeNoteButtonsContainer;
+                if (!container) return; 
+                container.innerHTML = '';
+                fretboardAllNoteNames.forEach((note, index) => {
+                    const button = document.createElement('button');
+                    button.className = 'note-select-btn';
+                    button.textContent = note;
+                    button.dataset.noteIndex = index;
+                    container.appendChild(button);
+                });
+            }
+
+            toggleCompactMode(isCompact) {
+                // [수정 2] 설정 숨기기/보이기 로직 확인 (작동 중)
+                if (isCompact) {
+                    this.dom.root.classList.add('compact-mode');
+                    this.dom.toggleCompactBtn.textContent = '설정 보이기';
+                } else {
+                    this.dom.root.classList.remove('compact-mode');
+                    this.dom.toggleCompactBtn.textContent = '설정 숨기기';
+                }
+            }
+
+            attachEventListeners() {
+                const update = () => {
+                    this.renderCurrentPattern();
+                    fretboardUpdateCombinedView();
+                };
+
+                this.dom.patternModeButtons.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.pattern-mode-btn');
+                    if (!btn) return;
+                    this.dom.patternModeButtons.querySelectorAll('.pattern-mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    this.patternMode = btn.dataset.mode;
+                    this.dom.scaleControls.style.display = this.patternMode === 'scale' ? 'block' : 'none';
+                    this.dom.chordControls.style.display = this.patternMode === 'chord' ? 'block' : 'none';
+                    this.dom.freeNoteControls.style.display = this.patternMode === 'free' ? 'block' : 'none';
+                    update();
+                });
+                
+                this.dom.colorModeButtons.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.color-mode-btn');
+                    if (!btn) return;
+                    this.dom.colorModeButtons.querySelectorAll('.color-mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    this.colorMode = btn.dataset.mode;
+                    update();
+                });
+
+                this.dom.textModeButtons.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.text-mode-btn');
+                    if (!btn) return;
+                    this.dom.textModeButtons.querySelectorAll('.text-mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    this.displayMode = btn.dataset.mode;
+                    update();
+                });
+
+                this.dom.scaleTypeButtons.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.scale-btn');
+                    if (!btn) return;
+                    this.dom.scaleTypeButtons.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    this.scaleType = btn.dataset.scale;
+                    update();
+                });
+                
+                this.dom.chordTypeButtons.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.chord-btn');
+                    if (!btn) return;
+                    this.dom.chordTypeButtons.querySelectorAll('.chord-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    this.chordType = btn.dataset.chord;
+                    update();
+                });
+                
+                [this.dom.scaleRootNoteButtons, this.dom.chordRootNoteButtons].forEach(container => {
+                    if (container) {
+                        container.addEventListener('click', (e) => {
+                            const btn = e.target.closest('.root-btn');
+                            if (!btn) return;
+                            
+                            this.rootNote = btn.dataset.root;
+                            
+                            document.querySelectorAll('.root-note-buttons .root-btn').forEach(b => {
+                                if (b.dataset.root === this.rootNote) b.classList.add('active');
+                                else b.classList.remove('active');
+                            });
+                            update();
+                        });
+                    }
+                });
+
+                this.dom.freeNoteButtonsContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.note-select-btn');
+                    if (!btn) return;
+                    const noteIndex = parseInt(btn.dataset.noteIndex);
+                    if (this.selectedFreeNotes.has(noteIndex)) {
+                        this.selectedFreeNotes.delete(noteIndex);
+                        btn.classList.remove('active');
+                    } else {
+                        this.selectedFreeNotes.add(noteIndex);
+                        btn.classList.add('active');
+                    }
+                    update();
+                });
+
+                this.dom.clearFreeNoteBtn.addEventListener('click', () => {
+                    this.selectedFreeNotes.clear();
+                    this.dom.freeNoteButtonsContainer.querySelectorAll('.note-select-btn').forEach(btn => btn.classList.remove('active'));
+                    update();
+                });
+                
+                this.dom.toggleCompactBtn.addEventListener('click', () => {
+                    this.toggleCompactMode(!this.dom.root.classList.contains('compact-mode'));
+                });
+            }
+        }
+        
+        function fretboardAddNewFretboard() {
+            const newId = fretboardNextId++;
+            const instance = new FretboardInstance(newId);
+            fretboardCollection.appendChild(instance.rootElement);
+            instance.dom.scaleRootNoteButtons.querySelector('[data-root="C"]').click();
+            instance.dom.scaleTypeButtons.querySelector('[data-scale="Major"]').click();
+            
+            fretboardUpdateCombinedView(); 
+            return instance;
+        }
+
+        fretboardAddFullBtn.addEventListener('click', () => fretboardAddNewFretboard());
+
+        document.addEventListener('DOMContentLoaded', () => {
+            rhythmUpdateTheme('blue', 'light'); 
+            rhythmGenerateRhythm();
+            rhythmDisplayPattern(rhythmPattern);
+            rhythmSwingAmount = 0; 
+            rhythmHandleSwingSelection(rhythmSwingAmount);
+            rhythmMetronomeToggle.checked = rhythmIsMetronomeAlwaysOn;
+        });
+
+    </script>
+</body>
+</html>

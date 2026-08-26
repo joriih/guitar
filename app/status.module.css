@@ -1,0 +1,129 @@
+.page {
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  padding: 24px;
+  background: var(--canvas);
+}
+
+.card {
+  display: flex;
+  width: min(460px, 100%);
+  min-height: 300px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 13px;
+  padding: 36px 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 5px;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+}
+
+.card h1 {
+  font-size: 23px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+
+.card p {
+  max-width: 350px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.primary,
+.secondary {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 15px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: white;
+}
+
+.secondary {
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+
+.loadingBars {
+  display: flex;
+  height: 48px;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink);
+}
+
+.loadingBars span {
+  width: 4px;
+  height: 12px;
+  border-radius: 999px;
+  background: currentColor;
+  animation: level 900ms ease-in-out infinite alternate;
+}
+
+.loadingBars span:nth-child(2) {
+  height: 28px;
+  animation-delay: -300ms;
+}
+
+.loadingBars span:nth-child(3) {
+  height: 20px;
+  animation-delay: -600ms;
+}
+
+@keyframes level {
+  to {
+    transform: scaleY(1.45);
+  }
+}
+
+@media (max-width: 460px) {
+  .page {
+    padding: 16px;
+  }
+
+  .card {
+    min-height: 280px;
+    padding-inline: 20px;
+  }
+
+  .actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

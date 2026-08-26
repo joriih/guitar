@@ -1,0 +1,89 @@
+.page {
+  min-height: 100svh;
+  padding: var(--space-4) clamp(var(--space-4), 3vw, var(--space-7)) var(--space-7);
+  background: var(--canvas);
+}
+
+.editorFrame {
+  display: grid;
+  width: min(1440px, 100%);
+  margin: 0 auto;
+  gap: var(--space-3);
+}
+
+.breadcrumb {
+  display: flex;
+  min-width: 0;
+  min-height: 44px;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.breadcrumb a {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 44px;
+  align-items: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-control);
+  color: var(--muted-strong);
+  font-size: var(--text-label);
+  font-weight: 500;
+}
+
+.breadcrumb a:hover {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.breadcrumb .back {
+  width: 44px;
+  flex: 0 0 44px;
+  justify-content: center;
+}
+
+.albumLink {
+  max-width: min(360px, calc(100% - 48px));
+  padding: 0 var(--space-3);
+}
+
+.albumLink span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tagEditor,
+.studio {
+  width: 100%;
+}
+
+.tagEditor {
+  border-radius: var(--radius-card);
+  box-shadow: none;
+}
+
+.studio {
+  border-color: var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: none;
+}
+
+@media (max-width: 700px) {
+  .page {
+    padding: var(--space-2) var(--space-2) var(--space-5);
+  }
+
+  .editorFrame {
+    gap: var(--space-2);
+  }
+
+  .breadcrumb {
+    min-height: 44px;
+  }
+
+  .tagEditor,
+  .studio {
+    border-radius: var(--radius-card);
+  }
+}
