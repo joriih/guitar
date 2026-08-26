@@ -1,4 +1,5 @@
 import type { MarkerColor } from "@/lib/markers";
+import type { YouTubeBackingTransport } from "@/components/youtube-backing";
 
 export type AdvancedStudioTake = {
   id: string;
@@ -20,8 +21,11 @@ export type PunchRequest = {
 export type AdvancedStudioRecordingTransport = {
   /** Primes external playback permission synchronously from the record click. */
   prime: () => Promise<void>;
-  /** Starts the currently selected take/Comp plus all tracks for overdubbing. */
-  start: () => Promise<void>;
+  /**
+   * Starts the selected arrangement and returns the measured milliseconds that
+   * playback was already running before microphone capture can begin.
+   */
+  start: () => Promise<number>;
   /** Stops and releases the scheduled mix nodes. */
   stop: () => void;
 };
@@ -35,10 +39,8 @@ export type AdvancedStudioToolsProps = {
   /** True from capture preparation through final processing/upload. */
   captureInProgress?: boolean;
   onPunchRequest?: (request: PunchRequest) => void | Promise<void>;
-  /** Starts a normal take from the visible YouTube reference panel. */
-  onYouTubeRecordingRequest?: () => Promise<void>;
-  /** Stops capture if a synchronized external backing is interrupted. */
-  onYouTubePlaybackInterrupted?: (message: string) => void;
+  /** External reference transport owned by the recording workspace dock. */
+  youtubeTransport?: YouTubeBackingTransport | null;
   onRecordingTransportReady?: (
     transport: AdvancedStudioRecordingTransport | null,
   ) => void;

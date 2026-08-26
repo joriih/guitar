@@ -22,13 +22,14 @@ function rect(
 
 const VIEWPORT = { width: 1_000, height: 800 };
 
-test("accepts a player meeting the minimum size when at least half is visible", () => {
+test("accepts a player meeting the minimum size when more than half is visible", () => {
   assert.equal(isRectMostlyVisible(rect(100, 100, 200, 200), VIEWPORT), true);
-  assert.equal(isRectMostlyVisible(rect(-100, 100, 200, 200), VIEWPORT), true);
-  assert.equal(isRectMostlyVisible(rect(100, -100, 200, 200), VIEWPORT), true);
+  assert.equal(isRectMostlyVisible(rect(-99, 100, 200, 200), VIEWPORT), true);
+  assert.equal(isRectMostlyVisible(rect(100, -99, 200, 200), VIEWPORT), true);
 });
 
-test("rejects a player when less than half of its area is visible", () => {
+test("rejects a player when half or less of its area is visible", () => {
+  assert.equal(isRectMostlyVisible(rect(-100, 100, 200, 200), VIEWPORT), false);
   assert.equal(isRectMostlyVisible(rect(-101, 100, 200, 200), VIEWPORT), false);
   assert.equal(isRectMostlyVisible(rect(901, 100, 200, 200), VIEWPORT), false);
   assert.equal(isRectMostlyVisible(rect(100, 701, 200, 200), VIEWPORT), false);
@@ -43,4 +44,3 @@ test("rejects undersized, outside, and invalid rectangles", () => {
     false,
   );
 });
-

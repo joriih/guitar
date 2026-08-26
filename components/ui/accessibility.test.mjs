@@ -136,11 +136,31 @@ test("YouTube recording checks the real iframe while official controls stay usab
   assert.match(section, /aria-invalid=\{errorField === "start" \|\| undefined\}/);
   assert.match(player, /document\.visibilityState !== "visible"/);
   assert.match(section, /onPlaybackInterrupted\?\./);
-  assert.match(recording, /onYouTubePlaybackInterrupted=\{handleYouTubePlaybackInterrupted\}/);
+  assert.match(recording, /onPlaybackInterrupted=\{handleYouTubePlaybackInterrupted\}/);
+  assert.match(recording, /onSyncEnabledChange=\{setYouTubeSyncEnabled\}/);
   const recordingStart = recording.slice(recording.indexOf("const startRecording"));
   assert.ok(
     recordingStart.indexOf("recordingTransportRef.current?.prime()") <
       recordingStart.indexOf("prepareMicrophone("),
     "YouTube playback permission must be primed before the first microphone await",
   );
+});
+
+test("recording meters and compact mobile options expose their real values without horizontal clipping", async () => {
+  const [recording, recordingStyles, advanced] = await Promise.all([
+    source("recording", "RecordingStudio.tsx"),
+    source("recording", "RecordingStudio.module.css"),
+    source("advanced-studio", "AdvancedStudioTools.tsx"),
+  ]);
+
+  assert.match(recording, /aria-valuemin=\{-48\}/);
+  assert.match(recording, /aria-valuemax=\{0\}/);
+  assert.match(recording, /aria-valuenow=\{inputLevelDb\}/);
+  assert.match(recording, /aria-valuetext=\{`\$\{inputLevelDb\} dB`\}/);
+  assert.match(
+    recordingStyles,
+    /@media \(max-width: 700px\)[\s\S]*?\.recordSettings\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*overflow-x:\s*visible/s,
+  );
+  assert.doesNotMatch(advanced, /role="table" aria-label="Comp 구간 목록"/);
+  assert.doesNotMatch(advanced, /className=\{styles\.compRow\} role="row"/);
 });

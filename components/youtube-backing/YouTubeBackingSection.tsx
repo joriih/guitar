@@ -1,11 +1,13 @@
 "use client";
 
 import {
-  CirclePlay,
+  ChevronDown,
   Headphones,
   Link2,
   LoaderCircle,
+  Plus,
   Save,
+  SlidersHorizontal,
   Trash2,
   Video,
 } from "lucide-react";
@@ -38,7 +40,7 @@ export type YouTubeBackingSectionProps = Readonly<{
   riffId: string;
   disabled?: boolean;
   onTransportChange?: (transport: YouTubeBackingTransport | null) => void;
-  onStartRecording?: () => Promise<void>;
+  onSyncEnabledChange?: (enabled: boolean) => void;
   onPlaybackInterrupted?: (message: string) => void;
 }>;
 
@@ -143,21 +145,38 @@ export function YouTubeBackingSection({
   riffId,
   disabled = false,
   onTransportChange,
-  onStartRecording,
+  onSyncEnabledChange,
   onPlaybackInterrupted,
 }: YouTubeBackingSectionProps) {
   const sectionId = useId();
   const playerRef = useRef<YouTubeBackingPlayerHandle | null>(null);
   const transportActiveRef = useRef(false);
+  const playbackAnchorRef = useRef<{
+    videoSeconds: number;
+    observedAtMs: number;
+  } | null>(null);
+  const lastPlayerErrorRef = useRef<string | null>(null);
   const sourceRef = useRef<YouTubeBackingSource | null>(null);
+  const settingsDetailsRef = useRef<HTMLDetailsElement>(null);
+  const onTransportChangeRef = useRef(onTransportChange);
+  const onSyncEnabledChangeRef = useRef(onSyncEnabledChange);
+  const reportedSyncEnabledRef = useRef(false);
   const [source, setSource] = useState<YouTubeBackingSource | null>(null);
   const [draft, setDraft] = useState<Draft>(() => emptyDraft());
   const [loading, setLoading] = useState(true);
   const [playerReady, setPlayerReady] = useState(false);
-  const [busy, setBusy] = useState<"save" | "delete" | "record" | null>(null);
+  const [busy, setBusy] = useState<"save" | "delete" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<"url" | "name" | "start" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    onTransportChangeRef.current = onTransportChange;
+  }, [onTransportChange]);
+
+  useEffect(() => {
+    onSyncEnabledChangeRef.current = onSyncEnabledChange;
+  }, [onSyncEnabledChange]);
 
   useEffect(() => {
     sourceRef.current = source;
@@ -223,13 +242,19 @@ export function YouTubeBackingSection({
       try {
         await player.playFrom(current.sourceStartMs / 1_000, current.volume * 100);
         transportActiveRef.current = true;
+        playbackAnchorRef.current = {
+          videoSeconds: player.getCurrentTime(),
+          observedAtMs: performance.now(),
+        };
       } catch (startError) {
         transportActiveRef.current = false;
+        playbackAnchorRef.current = null;
         throw startError;
       }
     },
     stop: () => {
       transportActiveRef.current = false;
+      playbackAnchorRef.current = null;
       const current = sourceRef.current;
       if (!current?.syncEnabled) return;
       playerRef.current?.pauseAndReset(current.sourceStartMs / 1_000);
@@ -237,13 +262,33 @@ export function YouTubeBackingSection({
   }), []);
 
   useEffect(() => {
-    onTransportChange?.(transport);
-    return () => onTransportChange?.(null);
-  }, [onTransportChange, transport]);
+    onTransportChangeRef.current?.(transport);
+    return () => onTransportChangeRef.current?.(null);
+  }, [transport]);
+
+  useEffect(() => {
+    if (errorField && settingsDetailsRef.current) {
+      settingsDetailsRef.current.open = true;
+    }
+  }, [errorField]);
+
+  useEffect(() => {
+    if (loading) return;
+    const nextEnabled = Boolean(source?.syncEnabled);
+    reportedSyncEnabledRef.current = nextEnabled;
+    onSyncEnabledChangeRef.current?.(nextEnabled);
+  }, [loading, source?.syncEnabled]);
+
+  useEffect(() => () => {
+    if (reportedSyncEnabledRef.current) {
+      onSyncEnabledChangeRef.current?.(false);
+    }
+  }, []);
 
   const interruptActiveTransport = useCallback((message: string) => {
     if (!transportActiveRef.current) return;
     transportActiveRef.current = false;
+    playbackAnchorRef.current = null;
     onPlaybackInterrupted?.(message);
   }, [onPlaybackInterrupted]);
 
@@ -388,185 +433,39 @@ export function YouTubeBackingSection({
     }
   }, [busy, disabled, fetchSource, riffId]);
 
-  const startRecording = useCallback(async () => {
-    const current = sourceRef.current;
-    const player = playerRef.current;
-    if (!current?.syncEnabled || !onStartRecording || disabled || busy) return;
-    if (!player?.isReady()) {
-      setErrorField(null);
-      setError("YouTube 플레이어가 준비된 뒤 다시 눌러 주세요.");
-      return;
-    }
-    if (!player.isMostlyVisible()) {
-      setErrorField(null);
-      setError("영상이 절반 이상 보이는 상태에서 녹음을 시작해 주세요.");
-      return;
-    }
-    setBusy("record");
-    setErrorField(null);
-    setError(null);
-    setMessage(null);
-    try {
-      await onStartRecording();
-    } catch (recordError) {
-      player.pauseAndReset(current.sourceStartMs / 1_000);
-      setError(recordError instanceof Error ? recordError.message : "YouTube와 함께 녹음을 시작하지 못했어요.");
-    } finally {
-      setBusy(null);
-    }
-  }, [busy, disabled, onStartRecording]);
-
   const controlsLocked = disabled || busy !== null;
   const helpId = `${sectionId}-help`;
   const errorId = `${sectionId}-error`;
+  const urlInputId = `${sectionId}-url`;
+  const syncInputId = `${sectionId}-sync`;
 
   return (
-    <section className={styles.section} aria-labelledby={`${sectionId}-title`} aria-busy={loading || busy !== null || undefined}>
-      <header className={styles.heading}>
-        <div>
-          <Video size={18} aria-hidden="true" />
+    <section
+      className={styles.section}
+      aria-label="YouTube 백킹 트랙"
+      aria-busy={loading || busy !== null || undefined}
+      data-youtube-backing-section
+    >
+      {loading || !source ? (
+        <header className={styles.addHeading}>
           <div>
-            <h4 id={`${sectionId}-title`}>YouTube 링크</h4>
-            <p>공식 플레이어로 연습하거나 새 테이크 녹음에 맞춰 재생해요.</p>
-          </div>
-        </div>
-        {source ? <span>연결됨</span> : <span>선택 사항</span>}
-      </header>
-
-      <fieldset className={styles.form} disabled={controlsLocked || loading}>
-        <label className={styles.urlField}>
-          <span>YouTube 영상 링크</span>
-          <div>
-            <Link2 size={15} aria-hidden="true" />
-            <input
-              type="url"
-              inputMode="url"
-              value={draft.url}
-              placeholder="https://youtu.be/..."
-              maxLength={2_048}
-              aria-describedby={`${helpId}${error && errorField === "url" ? ` ${errorId}` : ""}`}
-              aria-invalid={errorField === "url" || undefined}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, url: event.target.value }));
-                if (errorField === "url") {
-                  setErrorField(null);
-                  setError(null);
-                }
-              }}
-              onBlur={() => {
-                const parsed = parseYouTubeUrl(draft.url);
-                if (parsed && parsed.startSeconds > 0 && draft.sourceStartSeconds === "0") {
-                  setDraft((current) => ({
-                    ...current,
-                    sourceStartSeconds: String(parsed.startSeconds),
-                  }));
-                }
-              }}
-            />
-          </div>
-        </label>
-
-        <div className={styles.settingsGrid}>
-          <label>
-            <span>이름</span>
-            <input
-              value={draft.name}
-              maxLength={120}
-              aria-describedby={error && errorField === "name" ? errorId : undefined}
-              aria-invalid={errorField === "name" || undefined}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, name: event.target.value }));
-                if (errorField === "name") {
-                  setErrorField(null);
-                  setError(null);
-                }
-              }}
-            />
-          </label>
-          <label>
-            <span>영상 시작</span>
-            <div className={styles.unitInput}>
-              <input
-                type="number"
-                min={0}
-                max={86_400}
-                step={0.1}
-                inputMode="decimal"
-                value={draft.sourceStartSeconds}
-                aria-describedby={error && errorField === "start" ? errorId : undefined}
-                aria-invalid={errorField === "start" || undefined}
-                onChange={(event) => {
-                  setDraft((current) => ({
-                    ...current,
-                    sourceStartSeconds: event.target.value,
-                  }));
-                  if (errorField === "start") {
-                    setErrorField(null);
-                    setError(null);
-                  }
-                }}
-              />
-              <em>초</em>
+            <Video size={17} aria-hidden="true" />
+            <div>
+              <h4>YouTube 백킹</h4>
+              <p>공식 플레이어 링크를 반주 트랙으로 연결합니다.</p>
             </div>
-          </label>
-          <label className={styles.volumeField}>
-            <span>기본 볼륨 <output>{Math.round(draft.volume * 100)}</output></span>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={draft.volume}
-              onChange={(event) => setDraft((current) => ({
-                ...current,
-                volume: Number(event.target.value),
-              }))}
-            />
-          </label>
-        </div>
-
-        <label className={styles.syncChoice}>
-          <input
-            type="checkbox"
-            checked={draft.syncEnabled}
-            onChange={(event) => setDraft((current) => ({
-              ...current,
-              syncEnabled: event.target.checked,
-            }))}
-          />
-          <span>
-            <strong>새 테이크 녹음과 함께 시작</strong>
-            <small>플레이어가 화면에 보일 때만 참고 동기 재생을 시작해요.</small>
-          </span>
-        </label>
-
-        <div className={styles.formActions}>
-          <button type="button" className={styles.saveButton} onClick={() => void save()}>
-            {busy === "save" ? <LoaderCircle className={styles.spin} size={15} aria-hidden="true" /> : <Save size={15} aria-hidden="true" />}
-            {source ? "변경 저장" : "링크 저장"}
-          </button>
-          {source ? (
-            <button type="button" className={styles.deleteButton} onClick={() => void remove()}>
-              {busy === "delete" ? <LoaderCircle className={styles.spin} size={15} aria-hidden="true" /> : <Trash2 size={15} aria-hidden="true" />}
-              제거
-            </button>
-          ) : null}
-        </div>
-      </fieldset>
-
-      <p className={styles.help} id={helpId}>
-        YouTube 링크는 다운로드하지 않아요. 정확한 파형·편집·WAV 믹스다운이 필요하면 위의 파일 추가에서 MP3/WAV를 사용하세요.
-      </p>
-      {error ? <p className={styles.error} id={errorId} role="alert">{error}</p> : null}
-      {message ? <p className={styles.message} role="status">{message}</p> : null}
+          </div>
+          <span>선택 사항</span>
+        </header>
+      ) : null}
 
       {loading ? (
         <p className={styles.loading} role="status">
           <LoaderCircle className={styles.spin} size={15} aria-hidden="true" />
-          YouTube 참고 트랙 확인 중
+          YouTube 백킹 확인 중
         </p>
       ) : source ? (
-        <div className={styles.playerArea}>
+        <div className={styles.connectedTrack}>
           <YouTubeBackingPlayer
             key={`${source.id}:${source.revision}`}
             ref={playerRef}
@@ -574,11 +473,20 @@ export function YouTubeBackingSection({
             title={source.name}
             startSeconds={source.sourceStartMs / 1_000}
             initialVolume={source.volume * 100}
+            syncEnabled={source.syncEnabled}
+            customControlsDisabled={disabled}
             onControllerChange={(controller) => {
               playerRef.current = controller;
               setPlayerReady(Boolean(controller?.isReady()));
             }}
             onStatusChange={(status) => {
+              if (status === "playing" && lastPlayerErrorRef.current) {
+                const resolvedPlayerError = lastPlayerErrorRef.current;
+                lastPlayerErrorRef.current = null;
+                setError((currentError) =>
+                  currentError === resolvedPlayerError ? null : currentError,
+                );
+              }
               if (
                 !transportActiveRef.current ||
                 !["paused", "stopped", "ended", "error"].includes(status)
@@ -594,37 +502,247 @@ export function YouTubeBackingSection({
               );
             }}
             onPlaybackInterrupted={interruptActiveTransport}
+            onTimeUpdate={(currentTime) => {
+              const anchor = playbackAnchorRef.current;
+              if (!transportActiveRef.current || !anchor) return;
+              const expectedTime =
+                anchor.videoSeconds +
+                Math.max(0, performance.now() - anchor.observedAtMs) / 1_000;
+              if (Math.abs(currentTime - expectedTime) <= 1.25) return;
+              interruptActiveTransport(
+                "YouTube 재생 위치가 바뀌어 백킹 녹음을 중단했어요.",
+              );
+            }}
             onError={(playerError) => {
               setErrorField(null);
+              lastPlayerErrorRef.current = playerError.message;
               setError(playerError.message);
             }}
             onAutoplayBlocked={() => {
+              const autoplayMessage =
+                "브라우저가 자동 재생을 막았어요. 플레이어의 재생 버튼을 한 번 누른 뒤 다시 시도해 주세요.";
               setErrorField(null);
-              setError(
-                "브라우저가 자동 재생을 막았어요. 플레이어의 재생 버튼을 한 번 누른 뒤 다시 시도해 주세요.",
-              );
+              lastPlayerErrorRef.current = autoplayMessage;
+              setError(autoplayMessage);
             }}
           />
-          <div className={styles.recordTogether}>
+
+          <div className={styles.syncDock} data-enabled={source.syncEnabled || undefined}>
             <div>
               <Headphones size={16} aria-hidden="true" />
-              <p><strong>헤드폰 권장</strong><span>스피커로 재생하면 반주가 마이크에 함께 녹음될 수 있어요.</span></p>
+              <p>
+                <strong>{source.syncEnabled ? "상단 새 테이크 버튼으로 함께 녹음" : "녹음 동기화 꺼짐"}</strong>
+                <span>
+                  {source.syncEnabled
+                    ? playerReady
+                      ? "영상이 절반 이상 보이는 상태를 유지해 주세요. 헤드폰을 권장해요."
+                      : "공식 플레이어가 준비되면 상단 REC와 함께 시작할 수 있어요."
+                    : "필요하면 아래 트랙 설정에서 동기화를 켜고 저장하세요."}
+                </span>
+              </p>
             </div>
-            {onStartRecording && source.syncEnabled ? (
-              <button
-                type="button"
-                onClick={() => void startRecording()}
-                disabled={controlsLocked || !playerReady}
-              >
-                {busy === "record" ? <LoaderCircle className={styles.spin} size={16} aria-hidden="true" /> : <CirclePlay size={16} aria-hidden="true" />}
-                백킹과 녹음 시작
-              </button>
-            ) : null}
+            <span>{source.syncEnabled ? "REC 연동" : "수동 재생"}</span>
           </div>
+
+          <details className={styles.settingsDisclosure} ref={settingsDetailsRef}>
+            <summary>
+              <span><SlidersHorizontal size={15} aria-hidden="true" /> 트랙 설정</span>
+              <span>
+                {source.syncEnabled ? "녹음 동기화 켜짐" : "녹음 동기화 꺼짐"}
+                <ChevronDown size={15} aria-hidden="true" />
+              </span>
+            </summary>
+
+            <form
+              className={styles.settingsForm}
+              onSubmit={(event) => {
+                event.preventDefault();
+                void save();
+              }}
+            >
+              <fieldset disabled={controlsLocked}>
+                <label className={styles.urlField} htmlFor={urlInputId}>
+                  <span>YouTube 영상 링크</span>
+                  <div>
+                    <Link2 size={15} aria-hidden="true" />
+                    <input
+                      id={urlInputId}
+                      type="url"
+                      inputMode="url"
+                      value={draft.url}
+                      maxLength={2_048}
+                      aria-describedby={`${helpId}${error && errorField === "url" ? ` ${errorId}` : ""}`}
+                      aria-invalid={errorField === "url" || undefined}
+                      onChange={(event) => {
+                        setDraft((current) => ({ ...current, url: event.target.value }));
+                        if (errorField === "url") {
+                          setErrorField(null);
+                          setError(null);
+                        }
+                      }}
+                    />
+                  </div>
+                </label>
+
+                <div className={styles.settingsGrid}>
+                  <label>
+                    <span>트랙 이름</span>
+                    <input
+                      value={draft.name}
+                      maxLength={120}
+                      aria-describedby={error && errorField === "name" ? errorId : undefined}
+                      aria-invalid={errorField === "name" || undefined}
+                      onChange={(event) => {
+                        setDraft((current) => ({ ...current, name: event.target.value }));
+                        if (errorField === "name") {
+                          setErrorField(null);
+                          setError(null);
+                        }
+                      }}
+                    />
+                  </label>
+                  <label>
+                    <span>시작점</span>
+                    <div className={styles.unitInput}>
+                      <input
+                        type="number"
+                        min={0}
+                        max={86_400}
+                        step={0.1}
+                        inputMode="decimal"
+                        value={draft.sourceStartSeconds}
+                        aria-describedby={error && errorField === "start" ? errorId : undefined}
+                        aria-invalid={errorField === "start" || undefined}
+                        onChange={(event) => {
+                          setDraft((current) => ({
+                            ...current,
+                            sourceStartSeconds: event.target.value,
+                          }));
+                          if (errorField === "start") {
+                            setErrorField(null);
+                            setError(null);
+                          }
+                        }}
+                      />
+                      <em>초</em>
+                    </div>
+                  </label>
+                  <label className={styles.volumeField}>
+                    <span>녹음 시작 볼륨 <output>{Math.round(draft.volume * 100)}%</output></span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={draft.volume}
+                      onChange={(event) => setDraft((current) => ({
+                        ...current,
+                        volume: Number(event.target.value),
+                      }))}
+                    />
+                  </label>
+                </div>
+
+                <label className={styles.syncChoice} htmlFor={syncInputId}>
+                  <input
+                    id={syncInputId}
+                    type="checkbox"
+                    checked={draft.syncEnabled}
+                    onChange={(event) => setDraft((current) => ({
+                      ...current,
+                      syncEnabled: event.target.checked,
+                    }))}
+                  />
+                  <span>
+                    <strong>새 테이크 녹음과 함께 시작</strong>
+                    <small>영상이 화면에 절반 이상 보일 때만 동기 재생을 시작합니다.</small>
+                  </span>
+                </label>
+
+                <p className={styles.help} id={helpId}>
+                  YouTube는 다운로드하지 않아요. 파형 편집과 WAV 믹스다운에는 MP3/WAV 파일을 사용하세요.
+                </p>
+
+                <div className={styles.formActions}>
+                  <button type="submit" className={styles.saveButton}>
+                    {busy === "save" ? (
+                      <LoaderCircle className={styles.spin} size={15} aria-hidden="true" />
+                    ) : (
+                      <Save size={15} aria-hidden="true" />
+                    )}
+                    변경 저장
+                  </button>
+                  <button type="button" className={styles.deleteButton} onClick={() => void remove()}>
+                    {busy === "delete" ? (
+                      <LoaderCircle className={styles.spin} size={15} aria-hidden="true" />
+                    ) : (
+                      <Trash2 size={15} aria-hidden="true" />
+                    )}
+                    트랙 제거
+                  </button>
+                </div>
+              </fieldset>
+            </form>
+          </details>
         </div>
       ) : (
-        <p className={styles.empty}>링크를 저장하면 공식 YouTube 플레이어가 이곳에 표시됩니다.</p>
+        <form
+          className={styles.addForm}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void save();
+          }}
+        >
+          <fieldset disabled={controlsLocked}>
+            <label className={styles.visuallyHidden} htmlFor={urlInputId}>YouTube 영상 링크</label>
+            <div className={styles.addRow}>
+              <div>
+                <Link2 size={16} aria-hidden="true" />
+                <input
+                  id={urlInputId}
+                  type="url"
+                  inputMode="url"
+                  value={draft.url}
+                  placeholder="YouTube 링크 붙여넣기"
+                  maxLength={2_048}
+                  aria-describedby={`${helpId}${error && errorField === "url" ? ` ${errorId}` : ""}`}
+                  aria-invalid={errorField === "url" || undefined}
+                  onChange={(event) => {
+                    setDraft((current) => ({ ...current, url: event.target.value }));
+                    if (errorField === "url") {
+                      setErrorField(null);
+                      setError(null);
+                    }
+                  }}
+                  onBlur={() => {
+                    const parsed = parseYouTubeUrl(draft.url);
+                    if (parsed && parsed.startSeconds > 0 && draft.sourceStartSeconds === "0") {
+                      setDraft((current) => ({
+                        ...current,
+                        sourceStartSeconds: String(parsed.startSeconds),
+                      }));
+                    }
+                  }}
+                />
+              </div>
+              <button type="submit" className={styles.addButton}>
+                {busy === "save" ? (
+                  <LoaderCircle className={styles.spin} size={16} aria-hidden="true" />
+                ) : (
+                  <Plus size={16} aria-hidden="true" />
+                )}
+                트랙 추가
+              </button>
+            </div>
+          </fieldset>
+          <p className={styles.help} id={helpId}>
+            링크는 저장만 하며 다운로드하지 않습니다. 시간 표시가 있는 링크는 시작점에 반영해요.
+          </p>
+        </form>
       )}
+
+      {error ? <p className={styles.error} id={errorId} role="alert">{error}</p> : null}
+      {message ? <p className={styles.message} role="status">{message}</p> : null}
     </section>
   );
 }

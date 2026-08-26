@@ -17,7 +17,7 @@ Pretendard 위계, 앨범·녹음 화면, 아이콘과 접근성 원칙을 기�
 - `/Applications/Postgres.app`에 설치된 [Postgres.app](https://postgresapp.com/)
 - 처음 패키지·공유 도구를 받을 때 사용할 인터넷 연결
 
-비공개 저장소를 받을 권한이 있는 GitHub 계정으로 로그인한 뒤 실행합니다.
+공개 저장소를 내려받은 뒤 실행합니다.
 
 ```bash
 git clone https://github.com/joriih/guitar.git

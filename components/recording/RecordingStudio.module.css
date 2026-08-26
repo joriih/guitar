@@ -1519,14 +1519,31 @@
   }
 
   .recordSettings {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 8px 12px;
     gap: 8px;
+    overflow-x: visible;
   }
 
   .recordSettings > button,
   .selectOption,
   .checkboxOption {
+    width: 100%;
+    min-width: 0;
     min-height: 44px;
+    justify-content: center;
+  }
+
+  .recordSettings select {
+    min-width: 0;
+  }
+
+  .cycleStatus {
+    grid-column: 1 / -1;
+    margin-left: 0;
+    padding: 0 4px;
+    text-align: center;
   }
 
   .monitorPanel {
