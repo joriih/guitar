@@ -1,0 +1,126 @@
+.fieldset {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fieldset:disabled {
+  opacity: 0.68;
+}
+
+.fieldset:disabled .option label {
+  cursor: wait;
+  pointer-events: none;
+}
+
+.fieldset:disabled .option label:hover {
+  border-color: transparent;
+  transform: none;
+}
+
+.fieldset legend {
+  margin-bottom: var(--space-2);
+  color: var(--ink-soft);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+.fieldset > p {
+  margin-bottom: var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: var(--leading-body);
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.option {
+  min-width: 0;
+  position: relative;
+}
+
+.option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.option label {
+  min-width: 0;
+  height: 100%;
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--muted-strong);
+  cursor: pointer;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  text-align: center;
+  transition: border-color 150ms ease, transform 150ms ease;
+}
+
+.option label > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview {
+  position: relative;
+  aspect-ratio: 2.4;
+  overflow: hidden;
+  border-radius: var(--radius-none);
+  background: transparent;
+}
+
+.preview img {
+  object-fit: contain;
+  padding: 4px;
+  filter: drop-shadow(0 5px 4px rgb(34 29 25 / 9%));
+}
+
+.automatic {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--muted);
+}
+
+.option label:hover {
+  border-color: var(--line);
+}
+
+.option input:checked + label {
+  border-color: var(--ink);
+  background: transparent;
+  color: var(--ink);
+}
+
+.option input:focus-visible + label {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+@media (max-width: 560px) {
+  .options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 340px) {
+  .options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
