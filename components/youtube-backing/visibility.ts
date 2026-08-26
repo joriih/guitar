@@ -43,6 +43,5 @@ export function isRectMostlyVisible(
   );
   const area = rect.width * rect.height;
   const visibleArea = visibleWidth * visibleHeight;
-  return area > 0 && visibleArea / area >= MOSTLY_VISIBLE_RATIO;
+  return area > 0 && visibleArea / area > MOSTLY_VISIBLE_RATIO;
 }
-

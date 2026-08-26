@@ -43,10 +43,6 @@ import {
   type TimelineTrackSource,
 } from "@/components/audio-engine";
 import {
-  YouTubeBackingSection,
-  type YouTubeBackingTransport,
-} from "@/components/youtube-backing";
-import {
   cleanMarkerLabel,
   MARKER_COLORS,
   MAX_MARKER_LABEL_LENGTH,
@@ -336,15 +332,13 @@ export function AdvancedStudioTools({
   sharedStream = null,
   captureInProgress = false,
   onPunchRequest,
-  onYouTubeRecordingRequest,
-  onYouTubePlaybackInterrupted,
+  youtubeTransport = null,
   onRecordingTransportReady,
   className,
 }: AdvancedStudioToolsProps) {
   const sectionId = useId();
   const fileInputId = useId();
   const engineRef = useRef<AudioTimelineEngine | null>(null);
-  const youtubeTransportRef = useRef<YouTubeBackingTransport | null>(null);
   const decodeCacheRef = useRef<AudioDecodeCache | null>(null);
   const loadAbortRef = useRef<AbortController | null>(null);
   const patchTimersRef = useRef(new Map<string, number>());
@@ -2213,11 +2207,10 @@ export function AdvancedStudioTools({
     }
     const hasMainSource = sourceMode === "take" ? Boolean(selectedTake) : compRows.length > 0;
     const hasLocalArrangement = hasMainSource || tracks.length > 0;
-    const youtubeTransport = youtubeTransportRef.current;
     const hasYouTubeBacking = youtubeTransport?.isEnabled() ?? false;
     if (!hasLocalArrangement && !hasYouTubeBacking) {
       stopPreview();
-      return;
+      return 0;
     }
     stopPreview();
     const engine = engineRef.current;
@@ -2228,29 +2221,40 @@ export function AdvancedStudioTools({
       ? await buildArrangement(sourceMode)
       : [];
     try {
-      if (hasYouTubeBacking) await youtubeTransport?.start();
+      const playbackStartedAt: number[] = [];
+      // YouTube cannot share Web Audio's clock. Treat it as the master
+      // reference so a slow iframe never leaves the local mix running alone.
+      if (hasYouTubeBacking) {
+        await youtubeTransport?.start();
+        playbackStartedAt.push(performance.now());
+      }
       if (hasLocalArrangement && engine) {
         await engine.playTracks(arrangement, { fromSeconds: 0 });
         await engine.waitForPlaybackStart();
+        playbackStartedAt.push(performance.now());
       }
+      return playbackStartedAt.length > 0
+        ? Math.max(0, performance.now() - Math.min(...playbackStartedAt))
+        : 0;
     } catch (error) {
       youtubeTransport?.stop();
       engine?.clear();
       throw error;
     }
-  }, [buildArrangement, compRows.length, selectedTake, sourceMode, stopPreview, tracks.length]);
+  }, [buildArrangement, compRows.length, selectedTake, sourceMode, stopPreview, tracks.length, youtubeTransport]);
 
   const stopRecordingMix = useCallback(() => {
     stopPreview();
-    youtubeTransportRef.current?.stop();
-  }, [stopPreview]);
+    youtubeTransport?.stop();
+  }, [stopPreview, youtubeTransport]);
 
   const primeRecordingMix = useCallback(async () => {
     if (studioActionLockRef.current.pending !== null) {
       throw new Error("진행 중인 스튜디오 작업이 끝난 뒤 녹음을 시작해주세요.");
     }
-    await youtubeTransportRef.current?.prime();
-  }, []);
+    stopPreview();
+    await youtubeTransport?.prime();
+  }, [stopPreview, youtubeTransport]);
 
   const recordingTransport = useMemo<AdvancedStudioRecordingTransport>(() => ({
     prime: primeRecordingMix,
@@ -3135,16 +3139,6 @@ export function AdvancedStudioTools({
             {AUDIO_TRACK_IMPORT_HELP}
           </p>
 
-          <YouTubeBackingSection
-            riffId={riffId}
-            disabled={studioControlsLocked}
-            onStartRecording={onYouTubeRecordingRequest}
-            onPlaybackInterrupted={onYouTubePlaybackInterrupted}
-            onTransportChange={(transport) => {
-              youtubeTransportRef.current = transport;
-            }}
-          />
-
           <div className={styles.promoteRow}>
             <span><Guitar size={14} aria-hidden="true" /> 녹음한 테이크를 겹쳐 쓸 수 있어요.</span>
             <button type="button" onClick={() => void promoteSelectedTake()} disabled={!selectedTake || studioControlsLocked}>
@@ -3331,10 +3325,10 @@ export function AdvancedStudioTools({
             <button type="button" className={styles.primaryAction} onClick={() => void saveComp()} disabled={studioControlsLocked || !compHydrated || compDraftStatus === "conflict"}><Save size={14} /> 저장</button>
           </div>
         </div>
-        <div className={styles.compTable} role="table" aria-label="Comp 구간 목록">
-          <div className={styles.compHeading} role="row"><span>순서</span><span>테이크</span><span>시작</span><span>끝</span><span>작업</span></div>
+        <div className={styles.compTable} aria-label="Comp 구간 목록">
+          <div className={styles.compHeading}><span>순서</span><span>테이크</span><span>시작</span><span>끝</span><span>작업</span></div>
           {compRows.length === 0 ? <p className={styles.empty}>좋은 구간만 골라 순서대로 이어 붙일 수 있어요.</p> : compRows.map((row, index) => (
-            <div className={styles.compRow} role="row" key={row.clientId}>
+            <div className={styles.compRow} key={row.clientId}>
               <div className={styles.orderButtons}>
                 <b>{index + 1}</b>
                 <button type="button" onClick={() => moveCompRow(index, -1)} disabled={studioControlsLocked || !compHydrated || index === 0} aria-label={`${index + 1}번 구간 위로`}><ChevronUp size={13} /></button>

@@ -31,7 +31,7 @@ export type YouTubeBackingPlayerHandle = Readonly<{
   /** Pauses playback and returns the playhead to the requested position. */
   pauseAndReset: (seconds: number) => boolean;
   isReady: () => boolean;
-  /** True when at least half of a 200×200px-or-larger player is in view. */
+  /** True when more than half of a 200×200px-or-larger player is in view. */
   isMostlyVisible: () => boolean;
   getCurrentTime: () => number;
   getDuration: () => number;
@@ -44,10 +44,14 @@ export type YouTubeBackingPlayerProps = Readonly<{
   className?: string;
   /** Locks the visible controls and direct iframe input without hiding video. */
   disabled?: boolean;
+  /** Locks only this app's transport and seek controls; iframe controls stay usable. */
+  customControlsDisabled?: boolean;
   autoPlay?: boolean;
   initialVolume?: number;
   /** Overrides a timestamp included in the pasted URL. */
   startSeconds?: number;
+  /** Read-only track-strip metadata; recording synchronization stays parent-owned. */
+  syncEnabled?: boolean;
   onControllerChange?: (
     controller: YouTubeBackingPlayerHandle | null,
   ) => void;

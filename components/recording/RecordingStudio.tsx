@@ -42,6 +42,10 @@ import {
   type AdvancedStudioRecordingTransport,
   type PunchRequest,
 } from "@/components/advanced-studio";
+import {
+  YouTubeBackingSection,
+  type YouTubeBackingTransport,
+} from "@/components/youtube-backing";
 
 import styles from "./RecordingStudio.module.css";
 import {
@@ -366,6 +370,9 @@ export function RecordingStudio({
   const [inputLevel, setInputLevel] = useState(0);
 
   const [captureState, setCaptureState] = useState<CaptureState>("idle");
+  const [youtubeTransport, setYouTubeTransport] =
+    useState<YouTubeBackingTransport | null>(null);
+  const [youtubeSyncEnabled, setYouTubeSyncEnabled] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [recordingError, setRecordingError] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<RecordingDraft[]>([]);
@@ -1656,7 +1663,7 @@ export function RecordingStudio({
         countInTimerRef.current = null;
       }
       if (!mountedRef.current) return;
-      await recordingTransportRef.current?.start();
+      const playbackLeadMs = await recordingTransportRef.current?.start() ?? 0;
       if (
         !mountedRef.current ||
         !captureStartPendingRef.current ||
@@ -1666,6 +1673,7 @@ export function RecordingStudio({
         recordingTransportRef.current?.stop();
         return;
       }
+      recordingOffsetRef.current = Math.max(0, Math.round(playbackLeadMs));
       captureStartPendingRef.current = false;
       beginMediaRecorder(stream);
     } catch (error) {
@@ -2650,6 +2658,13 @@ export function RecordingStudio({
             : isRecording
               ? "녹음을 시작했어요."
               : "녹음할 준비가 됐어요.";
+  const inputLevelDb = Math.max(
+    -48,
+    Math.min(
+      0,
+      Math.round(20 * Math.log10(Math.max(inputLevel, Math.pow(10, -48 / 20)))),
+    ),
+  );
 
   function handleWritingTabKeyDown(
     event: ReactKeyboardEvent<HTMLButtonElement>,
@@ -2815,7 +2830,9 @@ export function RecordingStudio({
                 ? "카운트인 취소"
                 : isRecording
                   ? "녹음 정지"
-                  : "새 테이크 녹음"
+                  : youtubeSyncEnabled
+                    ? "YouTube 백킹과 새 테이크 녹음"
+                    : "새 테이크 녹음"
           }
           onClick={() =>
             isPreparing || isCounting
@@ -2839,7 +2856,9 @@ export function RecordingStudio({
                 ? "카운트인 취소"
                 : isRecording
                   ? "녹음 정지"
-                  : "새 테이크"}
+                  : youtubeSyncEnabled
+                    ? "백킹 + 새 테이크"
+                    : "새 테이크"}
           </span>
           <kbd>R</kbd>
         </button>
@@ -2880,7 +2899,7 @@ export function RecordingStudio({
             }}
           />
           <Repeat2 aria-hidden="true" size={15} />
-          <span>반복할 때마다 새 테이크</span>
+          <span>반복 테이크</span>
         </label>
         <label className={styles.selectOption}>
           <span>반복 길이</span>
@@ -2904,6 +2923,16 @@ export function RecordingStudio({
         ) : null}
       </div>
 
+      <div data-youtube-reference-dock>
+        <YouTubeBackingSection
+          riffId={riffId}
+          disabled={captureLocksStudioTransport(captureState)}
+          onPlaybackInterrupted={handleYouTubePlaybackInterrupted}
+          onTransportChange={setYouTubeTransport}
+          onSyncEnabledChange={setYouTubeSyncEnabled}
+        />
+      </div>
+
       <div className={styles.monitorPanel}>
         <div className={styles.monitorLabel}>
           <AudioLines aria-hidden="true" size={17} />
@@ -2923,9 +2952,10 @@ export function RecordingStudio({
             className={styles.levelMeter}
             role="meter"
             aria-label="입력 레벨"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(inputLevel * 100)}
+            aria-valuemin={-48}
+            aria-valuemax={0}
+            aria-valuenow={inputLevelDb}
+            aria-valuetext={`${inputLevelDb} dB`}
           >
             <span style={{ width: `${inputLevel * 100}%` }} />
           </div>
@@ -3465,8 +3495,7 @@ export function RecordingStudio({
         sharedStream={activeStream}
         captureInProgress={captureLocksStudioTransport(captureState)}
         onPunchRequest={handlePunchRequest}
-        onYouTubeRecordingRequest={startRecording}
-        onYouTubePlaybackInterrupted={handleYouTubePlaybackInterrupted}
+        youtubeTransport={youtubeTransport}
         onRecordingTransportReady={handleRecordingTransportReady}
       />
 

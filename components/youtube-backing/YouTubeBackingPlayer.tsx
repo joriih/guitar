@@ -156,9 +156,11 @@ export const YouTubeBackingPlayer = forwardRef<
     title = "YouTube 참고 트랙",
     className,
     disabled = false,
+    customControlsDisabled = false,
     autoPlay = false,
     initialVolume = 80,
     startSeconds,
+    syncEnabled = false,
     onControllerChange,
     onStatusChange,
     onError,
@@ -639,6 +641,30 @@ export const YouTubeBackingPlayer = forwardRef<
   }, [emitStatus, runCommand, settlePendingPlay]);
 
   useEffect(() => {
+    if (status !== "playing" && status !== "buffering") return;
+
+    const pauseWhenObscured = () => {
+      if (isPlayerMostlyVisible()) return;
+      callbacksRef.current.onPlaybackInterrupted?.(
+        "YouTube 영상이 화면에서 벗어나 백킹 재생을 중단했어요.",
+      );
+      settlePendingPlay(
+        new Error("YouTube 영상이 화면에서 벗어나 재생이 중단되었어요."),
+      );
+      if (runCommand((player) => player.pauseVideo())) emitStatus("paused");
+    };
+
+    window.addEventListener("scroll", pauseWhenObscured, { passive: true });
+    window.addEventListener("resize", pauseWhenObscured);
+    const timer = window.setInterval(pauseWhenObscured, 500);
+    return () => {
+      window.removeEventListener("scroll", pauseWhenObscured);
+      window.removeEventListener("resize", pauseWhenObscured);
+      window.clearInterval(timer);
+    };
+  }, [emitStatus, isPlayerMostlyVisible, runCommand, settlePendingPlay, status]);
+
+  useEffect(() => {
     if (!readyRef.current || status === "error" || status === "idle") return;
 
     const syncTime = () => {
@@ -661,27 +687,88 @@ export const YouTubeBackingPlayer = forwardRef<
   }, [status]);
 
   const hasReadyPlayer = readyRef.current && status !== "error";
-  const controlsDisabled = disabled || !hasReadyPlayer;
+  const controlsDisabled = disabled || customControlsDisabled || !hasReadyPlayer;
   const progressMaximum = Math.max(duration, 1);
   const visibleCurrentTime = Math.min(currentTime, progressMaximum);
   const rootClassName = className ? `${styles.player} ${className}` : styles.player;
+  const playbackActive = status === "playing" || status === "buffering";
+  const configuredStart = clampTime(startSeconds ?? parsedUrl?.startSeconds ?? 0);
 
   return (
     <section
       ref={rootRef}
       className={rootClassName}
       aria-label={title}
-      data-disabled={disabled || undefined}
+      data-disabled={disabled || customControlsDisabled || undefined}
       data-youtube-backing-player
+      data-youtube-track-strip
     >
-      <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>YouTube reference</p>
-          <h3>{title}</h3>
+      <header className={styles.trackHeader}>
+        <div className={styles.identity}>
+          <span className={styles.sourceMark} aria-hidden="true">YT</span>
+          <div>
+            <h3>{title}</h3>
+            <span className={styles.status} data-status={status} aria-live="polite">
+              <i aria-hidden="true" />
+              {STATUS_LABELS[status]}
+            </span>
+          </div>
         </div>
-        <span className={styles.status} data-status={status} aria-live="polite">
-          {STATUS_LABELS[status]}
-        </span>
+
+        <div className={styles.transport} role="group" aria-label="YouTube 재생 제어">
+          <button
+            type="button"
+            className={styles.playButton}
+            onClick={() => playbackActive ? controller.pause() : controller.play()}
+            disabled={controlsDisabled}
+            aria-label={playbackActive ? "YouTube 참고 트랙 일시 정지" : "YouTube 참고 트랙 재생"}
+            aria-pressed={playbackActive}
+          >
+            {playbackActive ? (
+              <Pause size={15} fill="currentColor" aria-hidden="true" />
+            ) : (
+              <Play size={15} fill="currentColor" aria-hidden="true" />
+            )}
+            <span>{playbackActive ? "일시 정지" : "재생"}</span>
+          </button>
+          <button
+            type="button"
+            className={styles.stopButton}
+            onClick={() => controller.stop()}
+            disabled={controlsDisabled}
+            aria-label="YouTube 참고 트랙 정지"
+            title="정지"
+          >
+            <Square size={13} fill="currentColor" aria-hidden="true" />
+          </button>
+        </div>
+
+        <label className={styles.volume}>
+          <Volume2 size={15} aria-hidden="true" />
+          <span className={styles.visuallyHidden}>YouTube 볼륨</span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={volume}
+            onChange={(event) => controller.setVolume(Number(event.target.value))}
+            disabled={controlsDisabled}
+            aria-valuetext={`${volume}%`}
+          />
+          <output aria-label={`현재 볼륨 ${volume}%`}>{volume}</output>
+        </label>
+
+        <dl className={styles.trackMeta}>
+          <div>
+            <dt>동기화</dt>
+            <dd data-enabled={syncEnabled || undefined}>{syncEnabled ? "켜짐" : "꺼짐"}</dd>
+          </div>
+          <div>
+            <dt>시작점</dt>
+            <dd>{formatTime(configuredStart)}</dd>
+          </div>
+        </dl>
       </header>
 
       <div className={styles.videoFrame}>
@@ -699,73 +786,27 @@ export const YouTubeBackingPlayer = forwardRef<
         </div>
       ) : null}
 
-      <div className={styles.controls} aria-disabled={disabled || undefined}>
-        <div className={styles.transport} aria-label="YouTube 재생 제어">
-          <button
-            type="button"
-            className={styles.playButton}
-            onClick={() => controller.play()}
-            disabled={controlsDisabled}
-            aria-label="YouTube 참고 트랙 재생"
-          >
-            <Play size={15} fill="currentColor" aria-hidden="true" />
-            재생
-          </button>
-          <button
-            type="button"
-            onClick={() => controller.pause()}
-            disabled={controlsDisabled}
-            aria-label="YouTube 참고 트랙 일시 정지"
-          >
-            <Pause size={15} fill="currentColor" aria-hidden="true" />
-            일시 정지
-          </button>
-          <button
-            type="button"
-            onClick={() => controller.stop()}
-            disabled={controlsDisabled}
-            aria-label="YouTube 참고 트랙 정지"
-          >
-            <Square size={13} fill="currentColor" aria-hidden="true" />
-            정지
-          </button>
-        </div>
-
-        <div className={styles.timeline}>
-          <label htmlFor={`youtube-progress-${parsedUrl?.videoId ?? "empty"}`}>
-            재생 위치
-          </label>
-          <input
-            id={`youtube-progress-${parsedUrl?.videoId ?? "empty"}`}
-            type="range"
-            min={0}
-            max={progressMaximum}
-            step={0.1}
-            value={visibleCurrentTime}
-            onChange={(event) => controller.seekTo(Number(event.target.value))}
-            disabled={controlsDisabled || duration <= 0}
-            aria-valuetext={`${formatTime(visibleCurrentTime)} / ${formatTime(duration)}`}
-          />
-          <output className={styles.time} aria-live="off">
-            {formatTime(visibleCurrentTime)} / {formatTime(duration)}
-          </output>
-        </div>
-
-        <label className={styles.volume}>
-          <Volume2 size={16} aria-hidden="true" />
-          <span>볼륨</span>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={1}
-            value={volume}
-            onChange={(event) => controller.setVolume(Number(event.target.value))}
-            disabled={controlsDisabled}
-            aria-valuetext={`${volume}%`}
-          />
-          <output>{volume}</output>
+      <div
+        className={styles.timeline}
+        aria-disabled={disabled || customControlsDisabled || undefined}
+      >
+        <label htmlFor={`youtube-progress-${parsedUrl?.videoId ?? "empty"}`}>
+          재생 위치
         </label>
+        <input
+          id={`youtube-progress-${parsedUrl?.videoId ?? "empty"}`}
+          type="range"
+          min={0}
+          max={progressMaximum}
+          step={0.1}
+          value={visibleCurrentTime}
+          onChange={(event) => controller.seekTo(Number(event.target.value))}
+          disabled={controlsDisabled || duration <= 0}
+          aria-valuetext={`${formatTime(visibleCurrentTime)} / ${formatTime(duration)}`}
+        />
+        <output className={styles.time} aria-live="off">
+          {formatTime(visibleCurrentTime)} / {formatTime(duration)}
+        </output>
       </div>
 
       {autoplayBlocked ? (
@@ -775,7 +816,7 @@ export const YouTubeBackingPlayer = forwardRef<
       ) : null}
 
       <footer className={styles.footer}>
-        <p>연습용 참고 재생 · 녹음 파일과 믹스다운에는 포함되지 않아요.</p>
+        <p>공식 YouTube 플레이어 · 녹음 파일과 믹스다운에는 포함되지 않아요.</p>
         {parsedUrl ? (
           <a
             href={parsedUrl.canonicalUrl}
