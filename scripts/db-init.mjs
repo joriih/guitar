@@ -7,6 +7,8 @@ import {
   assertLoopbackDatabaseUrl,
   resolvePostgresAdminUsername,
 } from "./local-database-url.mjs";
+import { acquireOperationLock } from "./operation-lock.mjs";
+import { assertNoIncompleteRestoreState } from "./restore-state.mjs";
 
 function loadLocalEnv() {
   const envPath = path.join(process.cwd(), ".env.local");
@@ -46,6 +48,20 @@ if (
   throw new Error(
     `DATABASE_URL must use database ${DATABASE_NAME} and role ${APP_ROLE}.`,
   );
+}
+
+const parentToken = process.env.RIFF_OPERATION_PARENT_TOKEN;
+delete process.env.RIFF_OPERATION_PARENT_TOKEN;
+const operationLock = await acquireOperationLock("doctor", {
+  root: process.cwd(),
+  ...(parentToken ? { parentToken } : {}),
+});
+try {
+if (!parentToken) {
+  // Standalone schema initialization must not race a restore generation. A
+  // parent-owned invocation is already serialized by its inherited lease and
+  // may legitimately run while that restore's durable journal exists.
+  await assertNoIncompleteRestoreState(process.cwd());
 }
 
 const audioStorageDirectory = path.join(process.cwd(), "storage", "audio");
@@ -118,9 +134,32 @@ try {
       username varchar(40) NOT NULL UNIQUE,
       display_name varchar(40) NOT NULL,
       password_hash text NOT NULL,
+      revision integer NOT NULL DEFAULT 0
+        CONSTRAINT app_user_revision_nonnegative CHECK (revision >= 0),
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     )
+  `);
+  await app.query(
+    `ALTER TABLE app_user
+       ADD COLUMN IF NOT EXISTS revision integer NOT NULL DEFAULT 0`,
+  );
+  await app.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+          FROM pg_constraint
+         WHERE conrelid = 'app_user'::regclass
+           AND conname = 'app_user_revision_nonnegative'
+      ) THEN
+        ALTER TABLE app_user
+          ADD CONSTRAINT app_user_revision_nonnegative
+          CHECK (revision >= 0) NOT VALID;
+      END IF;
+      ALTER TABLE app_user VALIDATE CONSTRAINT app_user_revision_nonnegative;
+    END
+    $$
   `);
 
   await app.query(`
@@ -466,3 +505,6 @@ try {
 }
 
 console.log("riff_sketchbook database is ready.");
+} finally {
+  await operationLock.release();
+}

@@ -23,6 +23,7 @@ import {
   assertLoopbackDatabaseUrl,
   normalizedDatabaseHostname,
 } from "./local-database-url.mjs";
+import { operationChildInvocation } from "./operation-child-invocation.mjs";
 import { acquireOperationLock } from "./operation-lock.mjs";
 import {
   assertNoIncompleteRestoreState,
@@ -33,6 +34,7 @@ import {
   assertRestoredCounts,
   assertStorageExact,
   databaseStateMatchesManifest,
+  isRestorableAudioStoragePath,
 } from "./restore-validation.mjs";
 
 const APP_PORT = 3000;
@@ -105,8 +107,15 @@ function throwIfInterrupted() {
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      env: options.env ?? process.env,
+    const environment = options.env ?? process.env;
+    const invocation = options.parentToken
+      ? operationChildInvocation(command, args, {
+          leases: [{ root: options.operationRoot ?? process.cwd(), token: options.parentToken }],
+          environment,
+        })
+      : { command, args, environment };
+    const child = spawn(invocation.command, invocation.args, {
+      env: invocation.environment,
       stdio: options.quiet ? ["ignore", "ignore", "pipe"] : "inherit",
     });
     activeChild = child;
@@ -192,7 +201,7 @@ function validateCounts(value) {
   return counts;
 }
 
-async function validateBackup(backupDirectory) {
+async function validateBackup(backupDirectory, parentToken) {
   await requireDirectory(backupDirectory, "선택한 백업");
 
   const manifestPath = path.join(backupDirectory, "manifest.json");
@@ -222,7 +231,10 @@ async function validateBackup(backupDirectory) {
   if ((await sha256(dumpPath)) !== database.sha256) {
     throw new Error("database.dump의 무결성 값이 일치하지 않아요.");
   }
-  await run(postgresBinary("pg_restore"), ["--list", dumpPath], { quiet: true });
+  await run(postgresBinary("pg_restore"), ["--list", dumpPath], {
+    quiet: true,
+    parentToken,
+  });
   throwIfInterrupted();
 
   const audio = requireObject(manifest.audio, "오디오");
@@ -237,8 +249,7 @@ async function validateBackup(backupDirectory) {
     throwIfInterrupted();
     const item = requireObject(itemValue, "오디오 파일");
     if (
-      typeof item.path !== "string" ||
-      path.basename(item.path) !== item.path ||
+      !isRestorableAudioStoragePath(item.path) ||
       seen.has(item.path) ||
       (item.kind !== "take" && item.kind !== "track") ||
       !validSha256(item.sha256)
@@ -702,17 +713,19 @@ try {
     });
   }
   await run(process.execPath, [path.join(process.cwd(), "scripts", "db-init.mjs")], {
-    env: { ...process.env, RIFF_OPERATION_PARENT_TOKEN: operationLock.token },
+    env: process.env,
+    parentToken: operationLock.token,
   });
   throwIfInterrupted();
 
   console.log("백업 파일 무결성을 확인하고 있어요…");
-  validated = await validateBackup(backupDirectory);
+  validated = await validateBackup(backupDirectory, operationLock.token);
   throwIfInterrupted();
 
   console.log("현재 데이터를 안전 백업하고 있어요…");
   await run(process.execPath, [path.join(process.cwd(), "scripts", "backup.mjs")], {
-    env: { ...process.env, RIFF_OPERATION_PARENT_TOKEN: operationLock.token },
+    env: process.env,
+    parentToken: operationLock.token,
   });
   throwIfInterrupted();
 
@@ -756,7 +769,10 @@ try {
       `--file=${restoreSqlPath}`,
       validated.dumpPath,
     ],
-    { env: databaseEnvironment(databaseUrl) },
+    {
+      env: databaseEnvironment(databaseUrl),
+      parentToken: operationLock.token,
+    },
   );
   await chmod(restoreSqlPath, FILE_MODE);
   await writeFile(validationSqlPath, validationSql(validated, restoreAttemptToken), {
@@ -818,14 +834,18 @@ try {
       "--file",
       validationSqlPath,
     ],
-    { env: databaseEnvironment(databaseUrl) },
+    {
+      env: databaseEnvironment(databaseUrl),
+      parentToken: operationLock.token,
+    },
   );
   databaseRestored = true;
   await updateJournal("database-restored");
   throwIfInterrupted();
 
   await run(process.execPath, [path.join(process.cwd(), "scripts", "db-init.mjs")], {
-    env: { ...process.env, RIFF_OPERATION_PARENT_TOKEN: operationLock.token },
+    env: process.env,
+    parentToken: operationLock.token,
   });
   const restoredState = await readDatabaseState(databaseUrl);
   assertRestoredCounts(restoredState.counts, validated.counts);

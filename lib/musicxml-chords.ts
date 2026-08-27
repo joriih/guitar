@@ -399,7 +399,19 @@ export function parseMusicXmlChordChart(input: string): MusicXmlChordChart {
     parseError("unsupported-score", "현재는 MusicXML의 score-partwise 코드표만 열 수 있어요.");
   }
 
-  const part = children(root, "part").find((candidate) => children(candidate, "measure").length > 0);
+  const part = children(root, "part")
+    .map((candidate, index) => {
+      const measures = children(candidate, "measure");
+      const harmonyCount = measures.reduce(
+        (count, measure) => count + children(measure, "harmony").length,
+        0,
+      );
+      return { candidate, index, measureCount: measures.length, harmonyCount };
+    })
+    .filter(({ measureCount }) => measureCount > 0)
+    .sort((left, right) =>
+      right.harmonyCount - left.harmonyCount || left.index - right.index)[0]
+    ?.candidate;
   if (!part) parseError("unsupported-score", "MusicXML에서 마디가 있는 파트를 찾지 못했어요.");
   const measureNodes = children(part, "measure");
   if (measureNodes.length > MAX_MUSIC_XML_MEASURES) {

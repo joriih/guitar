@@ -2454,13 +2454,58 @@ try {
   assert.ok(cookie, "login must issue a fresh session cookie");
   assert.notEqual(cookie, setupCookie, "login must not reuse the setup session token");
 
+  response = await request("/api/auth/status", { withOrigin: false });
+  const profileStart = await response.json();
+  assert.equal(profileStart.user.revision, 0);
+  const profileRevision = profileStart.user.revision;
+  const profileUpdates = await Promise.all([
+    request("/api/account/profile", {
+      method: "PATCH",
+      json: {
+        username: "midnight.e2e",
+        displayName: "E2E",
+        expectedRevision: profileRevision,
+      },
+    }),
+    request("/api/account/profile", {
+      method: "PATCH",
+      json: {
+        username: "e2e",
+        displayName: "새벽 격리 테스트",
+        expectedRevision: profileRevision,
+      },
+    }),
+  ]);
+  assert.deepEqual(
+    profileUpdates.map((item) => item.status).sort((left, right) => left - right),
+    [200, 409],
+    "only one profile update may consume a revision",
+  );
+  for (const item of profileUpdates) assertNoStore(item, "profile CAS response");
+  const successfulProfileResponse = profileUpdates.find((item) => item.status === 200);
+  const conflictedProfileResponse = profileUpdates.find((item) => item.status === 409);
+  assert.ok(successfulProfileResponse && conflictedProfileResponse);
+  const successfulProfile = (await successfulProfileResponse.json()).user;
+  const conflictedProfile = (await conflictedProfileResponse.json()).current;
+  assert.deepEqual(
+    conflictedProfile,
+    successfulProfile,
+    "a stale profile update must return the preserved current snapshot",
+  );
   response = await request("/api/account/profile", {
     method: "PATCH",
-    json: { username: "midnight.e2e", displayName: "새벽 격리 테스트" },
+    json: {
+      username: "midnight.e2e",
+      displayName: "새벽 격리 테스트",
+      expectedRevision: successfulProfile.revision,
+    },
   });
-  assert.equal(response.status, 200);
-  assertNoStore(response, "profile update success");
-  assert.equal((await response.json()).user.username, "midnight.e2e");
+  assert.equal(response.status, 200, "the merged profile should save at the new revision");
+  assertNoStore(response, "merged profile update success");
+  const mergedProfile = (await response.json()).user;
+  assert.equal(mergedProfile.username, "midnight.e2e");
+  assert.equal(mergedProfile.displayName, "새벽 격리 테스트");
+  assert.equal(mergedProfile.revision, profileRevision + 2);
   response = await request("/settings", { withOrigin: false });
   assert.equal(response.status, 200, "settings should render for the signed-in user");
 

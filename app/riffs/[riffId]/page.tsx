@@ -44,6 +44,7 @@ export default async function RiffPage({ params }: RiffPageProps) {
           </Link>
         </nav>
         <RiffTagEditor
+          key={JSON.stringify(riff.tags.map(({ id, name }) => [id, name]))}
           className={styles.tagEditor}
           riffId={riff.id}
           initialTags={riff.tags}

@@ -1,12 +1,14 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import type { PoolClient } from "pg";
 
 import { compensateAudioWriteFailure } from "@/lib/audio-compensation";
+import { sha256AudioBlob } from "@/lib/audio-file-digest";
 import { preflightAudioFile } from "@/lib/audio-file-format";
 import { requireUser } from "@/lib/auth";
 import {
   normalizeMimeType,
+  removeAudioFile,
   sanitizeOriginalName,
   saveAudioFile,
 } from "@/lib/audio-storage";
@@ -78,18 +80,15 @@ async function trackRequestFingerprint(options: {
   durationMs: number | null;
 }): Promise<string> {
   const { audio, kind, name, durationMs } = options;
-  const hash = createHash("sha256");
-  hash.update(JSON.stringify({
+  const metadata = JSON.stringify({
     kind,
     name,
     durationMs,
     originalFileName: sanitizeOriginalName(audio.name),
     mimeType: normalizeMimeType(audio.type),
     byteSize: audio.size,
-  }));
-  hash.update("\0");
-  hash.update(Buffer.from(await audio.arrayBuffer()));
-  return hash.digest("hex");
+  });
+  return sha256AudioBlob(audio, `${metadata}\0`);
 }
 
 async function findTrackByRequest(
@@ -182,10 +181,32 @@ export async function POST(request: Request, { params }: Context) {
       durationMs,
     });
 
+    const replay = await withTransaction(async (client) => {
+      const riff = await client.query(
+        `SELECT id FROM riff
+          WHERE id = $1 AND deleted_at IS NULL
+          FOR UPDATE`,
+        [riffId],
+      );
+      if (!riff.rowCount) throw new ApiError(404, "리프를 찾을 수 없어요.");
+      return findTrackByRequest(client, riffId, requestId);
+    });
+    if (replay) {
+      assertMatchingReplay(replay, requestFingerprint);
+      return NextResponse.json(
+        { track: mapTrack(replay), idempotentReplay: true },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
+    savedFileRef.current = await saveAudioFile(audio);
+    const savedFile = savedFileRef.current;
+
     const id = randomUUID();
     const upload = await withTransaction(async (client) => {
-      // The riff lock serializes every create for this riff. A concurrent
-      // replay therefore observes the first row before it writes another file.
+      // The riff lock serializes the database create for this riff. Concurrent
+      // uploads may each finish a temporary file first, but only one row wins;
+      // the loser observes it here and removes its own unreferenced file below.
       const riff = await client.query(
         `SELECT id FROM riff
           WHERE id = $1 AND deleted_at IS NULL
@@ -200,8 +221,6 @@ export async function POST(request: Request, { params }: Context) {
         return { row: existing, created: false } as const;
       }
 
-      const savedFile = await saveAudioFile(audio);
-      savedFileRef.current = savedFile;
       const inserted = await client.query<CreatedTrackRow>(
         `INSERT INTO riff_track
            (id, riff_id, kind, name, storage_path, original_file_name,
@@ -229,6 +248,9 @@ export async function POST(request: Request, { params }: Context) {
       return { row: inserted.rows[0]!, created: true } as const;
     });
 
+    if (!upload.created) {
+      await removeAudioFile(savedFile.storagePath);
+    }
     savedFileRef.current = null;
     return NextResponse.json(
       { track: mapTrack(upload.row), idempotentReplay: !upload.created },

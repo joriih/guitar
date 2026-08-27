@@ -66,10 +66,6 @@ export function RiffRowActions({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    revisionRef.current = initialRevision;
-  }, [initialRevision]);
-
-  useEffect(() => {
     if (!menuOpen) return;
     duplicateButtonRef.current?.focus();
     function handlePointerDown(event: PointerEvent) {

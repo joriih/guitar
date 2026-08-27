@@ -25,6 +25,7 @@ import {
   acquireOperationLock,
   OperationLockConflictError,
 } from "./operation-lock.mjs";
+import { operationChildInvocation } from "./operation-child-invocation.mjs";
 import {
   inspectProcessIdentity,
   PROCESS_IDENTITY_STATUS,
@@ -111,8 +112,16 @@ process.on("SIGTERM", onSigterm);
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      env: options.env ?? process.env,
+    const environment = options.env ?? process.env;
+    const invocation = options.leases
+      ? operationChildInvocation(command, args, {
+          leases: options.leases,
+          commandLease: options.commandLease,
+          environment,
+        })
+      : { command, args, environment };
+    const child = spawn(invocation.command, invocation.args, {
+      env: invocation.environment,
       stdio: options.quiet ? "ignore" : "inherit",
     });
     activeChild = child;
@@ -493,21 +502,29 @@ async function main() {
     }
     if (await handleExistingProcess(needsBuild)) return;
     await assertNoOrphanServer();
+    const protectedChildLeases = [
+      { root: process.cwd(), token: operationLock.token },
+      ...(installOperationLock
+        ? [{ root: installLockRoot, token: installOperationLock.token }]
+        : []),
+    ];
+    const commandLease = protectedChildLeases[0];
     throwIfInterrupted();
     await ensurePostgres();
     throwIfInterrupted();
     await run(process.execPath, [path.join(process.cwd(), "scripts", "db-init.mjs")], {
-      env: { ...process.env, RIFF_OPERATION_PARENT_TOKEN: operationLock.token },
+      env: process.env,
+      leases: protectedChildLeases,
+      commandLease,
     });
     throwIfInterrupted();
     await run(
       process.execPath,
       [path.join(process.cwd(), "scripts", "audio-cleanup.mjs")],
       {
-        env: {
-          ...process.env,
-          RIFF_AUDIO_CLEANUP_PARENT_TOKEN: operationLock.token,
-        },
+        env: process.env,
+        leases: protectedChildLeases,
+        commandLease,
       },
     );
     throwIfInterrupted();
@@ -518,7 +535,10 @@ async function main() {
         );
       }
       console.log("더 빠르고 안정적인 실행을 위해 앱을 준비하고 있어요…");
-      await run("npm", ["run", "build"]);
+      await run("npm", ["run", "build"], {
+        leases: protectedChildLeases,
+        commandLease,
+      });
     }
     throwIfInterrupted();
     await startServer();

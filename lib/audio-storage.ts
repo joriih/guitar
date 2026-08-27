@@ -1,5 +1,4 @@
-import { createReadStream } from "node:fs";
-import { chmod, copyFile, lstat, mkdir, unlink, writeFile } from "node:fs/promises";
+import { chmod, copyFile, lstat, mkdir, open, unlink, type FileHandle } from "node:fs/promises";
 import { constants as fsConstants } from "node:fs";
 import path from "node:path";
 import { Readable } from "node:stream";
@@ -7,6 +6,7 @@ import { randomUUID } from "node:crypto";
 
 import { ApiError } from "@/lib/http";
 import { preflightAudioFile } from "@/lib/audio-file-format";
+import { writeExclusiveAudioStream } from "@/lib/audio-stream-write";
 import {
   audioContentDispositionHeader,
   type AudioContentDisposition,
@@ -59,6 +59,9 @@ async function safeStorageDirectoryExists(): Promise<boolean> {
 async function ensureStorageDirectory() {
   const directory = storageDirectory();
   await mkdir(directory, { recursive: true, mode: 0o700 });
+  if (!(await safeStorageDirectoryExists())) {
+    throw new Error("Audio storage directory could not be created safely.");
+  }
   await chmod(directory, 0o700);
 }
 
@@ -79,10 +82,10 @@ export async function saveAudioFile(file: File): Promise<{
 
   const storagePath = `${randomUUID()}.${extension}`;
   await ensureStorageDirectory();
-  await writeFile(
+  await writeExclusiveAudioStream(
     resolveAudioPath(storagePath),
-    Buffer.from(await file.arrayBuffer()),
-    { flag: "wx", mode: 0o600 },
+    file.stream(),
+    file.size,
   );
 
   return {
@@ -159,22 +162,58 @@ export async function duplicateAudioFile(storagePath: string): Promise<string> {
   return duplicatePath;
 }
 
-export function audioStreamResponse(options: {
-  request: Request;
-  absolutePath: string;
-  mimeType: string;
+export type OpenAudioFile = Readonly<{
+  handle: FileHandle;
   byteSize: number;
+}>;
+
+export async function openAudioFile(storagePath: string): Promise<OpenAudioFile> {
+  const absolutePath = resolveAudioPath(storagePath);
+  if (!(await safeStorageDirectoryExists())) {
+    throw new ApiError(404, "오디오 파일을 찾을 수 없어요.");
+  }
+
+  let handle: FileHandle;
+  try {
+    handle = await open(
+      absolutePath,
+      fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
+    );
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === "ENOENT" || code === "ENOTDIR" || code === "ELOOP") {
+      throw new ApiError(404, "오디오 파일을 찾을 수 없어요.");
+    }
+    throw error;
+  }
+
+  try {
+    const fileStat = await handle.stat();
+    if (!fileStat.isFile() || !Number.isSafeInteger(fileStat.size)) {
+      throw new ApiError(404, "오디오 파일을 찾을 수 없어요.");
+    }
+    return { handle, byteSize: fileStat.size };
+  } catch (error) {
+    await handle.close().catch(() => undefined);
+    throw error;
+  }
+}
+
+export async function audioStreamResponse(options: {
+  request: Request;
+  file: OpenAudioFile;
+  mimeType: string;
   fileName: string;
   disposition?: AudioContentDisposition;
-}): Response {
+}): Promise<Response> {
   const {
     request,
-    absolutePath,
+    file,
     mimeType,
-    byteSize,
     fileName,
     disposition = "inline",
   } = options;
+  const { handle, byteSize } = file;
   const range = request.headers.get("range");
   const baseHeaders = new Headers({
     "Accept-Ranges": "bytes",
@@ -183,7 +222,8 @@ export function audioStreamResponse(options: {
     "Content-Disposition": audioContentDispositionHeader(disposition, fileName),
     "X-Content-Type-Options": "nosniff",
   });
-  const rangeNotSatisfiable = () => {
+  const rangeNotSatisfiable = async () => {
+    await handle.close().catch(() => undefined);
     const headers = new Headers(baseHeaders);
     headers.set("Content-Range", `bytes */${byteSize}`);
     return new Response(null, { status: 416, headers });
@@ -191,7 +231,7 @@ export function audioStreamResponse(options: {
 
   if (!range) {
     baseHeaders.set("Content-Length", String(byteSize));
-    const stream = createReadStream(absolutePath);
+    const stream = handle.createReadStream({ autoClose: true });
     return new Response(Readable.toWeb(stream) as ReadableStream, {
       status: 200,
       headers: baseHeaders,
@@ -230,7 +270,7 @@ export function audioStreamResponse(options: {
 
   baseHeaders.set("Content-Length", String(end - start + 1));
   baseHeaders.set("Content-Range", `bytes ${start}-${end}/${byteSize}`);
-  const stream = createReadStream(absolutePath, { start, end });
+  const stream = handle.createReadStream({ start, end, autoClose: true });
   return new Response(Readable.toWeb(stream) as ReadableStream, {
     status: 206,
     headers: baseHeaders,

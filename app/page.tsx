@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AppShell, HomeContent, type AlbumSummary, type RecentRiffSummary } from "@/components/ui";
+import { relativeDate } from "@/components/library/format";
 import { ALBUM_COVER_PATHS } from "@/lib/album-covers";
 import {
   countRiffs,
@@ -13,19 +14,6 @@ import {
 import { cleanTagName } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
-
-function relativeDate(value: string): string {
-  const elapsed = Date.now() - new Date(value).getTime();
-  const minutes = Math.max(0, Math.round(elapsed / 60_000));
-  if (minutes < 2) return "방금";
-  if (minutes < 60) return `${minutes}분 전`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}시간 전`;
-  const days = Math.round(hours / 24);
-  if (days === 1) return "어제";
-  if (days < 14) return `${days}일 전`;
-  return new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric" }).format(new Date(value));
-}
 
 type HomePageProps = {
   searchParams: Promise<{ view?: string; q?: string; tag?: string }>;
@@ -50,7 +38,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       ...riffFilters,
       limit: isFiltering ? 200 : 12,
     }),
-    isFiltering ? countRiffs(riffFilters) : Promise.resolve(null),
+    countRiffs(riffFilters),
     tagFilter ? listRiffAlbumIds(riffFilters) : Promise.resolve([]),
   ]);
   const albumNames = new Map(albums.map((album) => [album.id, album.name]));
@@ -121,7 +109,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         albumLayout={view}
         title={title}
         searchQuery={rawKeyword || tagFilter}
-        totalRiffCount={filteredRiffCount ?? undefined}
+        totalRiffCount={filteredRiffCount}
         activeFilter={tagFilter ? { label: `#${tagFilter}`, href: clearFilterHref } : undefined}
         allAlbumsHref="/albums"
         allRiffsHref="/recent"

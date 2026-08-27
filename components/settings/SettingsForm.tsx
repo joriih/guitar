@@ -17,10 +17,30 @@ type SettingsFormProps = {
   initialUser: {
     username: string;
     displayName: string;
+    revision: number;
   };
 };
 
 type Feedback = { kind: "success" | "error"; message: string } | null;
+type ProfileSnapshot = SettingsFormProps["initialUser"];
+
+function profileSnapshot(payload: unknown, key: "user" | "current"): ProfileSnapshot | null {
+  if (!payload || typeof payload !== "object") return null;
+  const candidate = (payload as Record<string, unknown>)[key];
+  if (!candidate || typeof candidate !== "object") return null;
+  const value = candidate as Record<string, unknown>;
+  return typeof value.username === "string" &&
+    typeof value.displayName === "string" &&
+    typeof value.revision === "number" &&
+    Number.isInteger(value.revision) &&
+    value.revision >= 0
+    ? {
+        username: value.username,
+        displayName: value.displayName,
+        revision: value.revision,
+      }
+    : null;
+}
 
 function responseMessage(payload: unknown, fallback: string): string {
   if (!payload || typeof payload !== "object") return fallback;
@@ -54,8 +74,10 @@ function FeedbackMessage({ feedback, id }: { feedback: Feedback; id: string }) {
 export function SettingsForm({ initialUser }: SettingsFormProps) {
   const router = useRouter();
   const passwordRequestRef = useRef<ClientCreateRequest | null>(null);
+  const profileBaselineRef = useRef<ProfileSnapshot>(initialUser);
   const [username, setUsername] = useState(initialUser.username);
   const [displayName, setDisplayName] = useState(initialUser.displayName);
+  const [profileRevision, setProfileRevision] = useState(initialUser.revision);
   const [profileBusy, setProfileBusy] = useState(false);
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [profileFeedback, setProfileFeedback] = useState<Feedback>(null);
@@ -71,12 +93,36 @@ export function SettingsForm({ initialUser }: SettingsFormProps) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ username, displayName }),
+        body: JSON.stringify({ username, displayName, expectedRevision: profileRevision }),
       });
       const payload: unknown = await response.json().catch(() => null);
+      if (response.status === 409) {
+        const current = profileSnapshot(payload, "current");
+        if (current) {
+          const baseline = profileBaselineRef.current;
+          setUsername((value) => value === baseline.username ? current.username : value);
+          setDisplayName((value) =>
+            value === baseline.displayName ? current.displayName : value,
+          );
+          setProfileRevision(current.revision);
+          profileBaselineRef.current = current;
+          setProfileFeedback({
+            kind: "error",
+            message:
+              "다른 창의 변경을 반영했어요. 현재 입력을 확인한 뒤 다시 저장해주세요.",
+          });
+          return;
+        }
+      }
       if (!response.ok) {
         throw new Error(responseMessage(payload, "사용자 정보를 저장하지 못했어요."));
       }
+      const saved = profileSnapshot(payload, "user");
+      if (!saved) throw new Error("저장된 사용자 정보를 확인하지 못했어요.");
+      setUsername(saved.username);
+      setDisplayName(saved.displayName);
+      setProfileRevision(saved.revision);
+      profileBaselineRef.current = saved;
       setProfileFeedback({ kind: "success", message: "사용자 정보를 저장했어요." });
       router.refresh();
     } catch (error) {

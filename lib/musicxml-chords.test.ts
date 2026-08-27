@@ -59,6 +59,18 @@ test("parses a bounded chord chart without resolving the standard MusicXML DTD",
   assert.equal(chart.measures[1].repeatTimes, 3);
 });
 
+test("selects the chord-bearing part in a multi-part score", () => {
+  const chart = parseMusicXmlChordChart(`<score-partwise>
+    <part id="P1"><measure number="1"><note/></measure></part>
+    <part id="P2">
+      <measure number="A"><harmony><root><root-step>C</root-step></root><kind>major</kind></harmony></measure>
+      <measure number="B"><harmony><root><root-step>F</root-step></root><kind>dominant</kind></harmony></measure>
+    </part>
+  </score-partwise>`);
+  assert.deepEqual(chart.measures.map((measure) => measure.number), ["A", "B"]);
+  assert.deepEqual(chart.harmonies.map((harmony) => harmony.symbol), ["C", "F7"]);
+});
+
 test("rejects external entities, nonstandard doctypes, and malformed nesting", () => {
   for (const source of [
     '<!DOCTYPE score-partwise SYSTEM "https://example.com/evil.dtd"><score-partwise/>',

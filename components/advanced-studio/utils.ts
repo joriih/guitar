@@ -230,11 +230,14 @@ export function completeCreateRequest(
 }
 
 export async function audioFileContentDigest(
-  file: Pick<File, "arrayBuffer">,
+  file: Pick<File, "arrayBuffer"> & Partial<Pick<File, "size" | "stream">>,
 ): Promise<string> {
-  const bytes = await file.arrayBuffer();
   const subtle = globalThis.crypto?.subtle;
-  if (subtle) {
+  // Web Crypto has no incremental digest API. Keep its exact SHA-256 result
+  // for small files, but do not allocate a second 95MB buffer for a large
+  // backing track merely to derive a browser-side retry key.
+  if (subtle && (file.size === undefined || file.size <= 8 * 1024 * 1024)) {
+    const bytes = await file.arrayBuffer();
     const digest = new Uint8Array(await subtle.digest("SHA-256", bytes));
     return Array.from(digest, (value) => value.toString(16).padStart(2, "0")).join("");
   }
@@ -243,9 +246,25 @@ export async function audioFileContentDigest(
   // verifies the source with a cryptographic SHA-256 fingerprint.
   let first = 2_166_136_261;
   let second = 2_166_136_261 ^ 0x9e3779b9;
-  for (const value of new Uint8Array(bytes)) {
-    first = Math.imul(first ^ value, 16_777_619);
-    second = Math.imul(second ^ (value + 1), 16_777_619);
+  const consume = (bytes: Uint8Array) => {
+    for (const value of bytes) {
+      first = Math.imul(first ^ value, 16_777_619);
+      second = Math.imul(second ^ (value + 1), 16_777_619);
+    }
+  };
+  if (file.stream) {
+    const reader = file.stream().getReader();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        consume(value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  } else {
+    consume(new Uint8Array(await file.arrayBuffer()));
   }
   return `fallback-${(first >>> 0).toString(16).padStart(8, "0")}${(
     second >>> 0

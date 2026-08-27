@@ -20,12 +20,13 @@ test("local access remains the fail-closed default", () => {
 });
 
 test("loopback APP_ORIGIN supports isolated local ports without remote mode", () => {
-  const isolatedOrigin = "http://127.0.0.1:43127";
-  assert.deepEqual(allowedAppOrigins(isolatedOrigin, undefined), [
-    DEFAULT_APP_ORIGIN,
-    isolatedOrigin,
-  ]);
+  const isolatedOrigin = "http://127.0.0.1:43117";
+  assert.deepEqual(allowedAppOrigins(isolatedOrigin, undefined), [isolatedOrigin]);
   assert.equal(isAllowedAppOrigin(isolatedOrigin, isolatedOrigin, undefined), true);
+  assert.equal(
+    isAllowedAppOrigin(DEFAULT_APP_ORIGIN, isolatedOrigin, undefined),
+    false,
+  );
   assert.equal(isLoopbackAppOrigin("http://localhost:3000"), true);
   assert.equal(isLoopbackAppOrigin("http://[::1]:3000"), true);
 });

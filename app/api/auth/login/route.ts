@@ -6,7 +6,12 @@ import {
   recordAuthFailure,
 } from "@/lib/auth-rate-limit";
 import { withTransaction } from "@/lib/db";
-import { ApiError, apiError, assertSameOrigin } from "@/lib/http";
+import {
+  ApiError,
+  apiError,
+  assertSameOrigin,
+  readJsonWithLimit,
+} from "@/lib/http";
 import { verifyPassword } from "@/lib/password";
 import { issueSession, setSessionCookie } from "@/lib/session";
 import { loginSchema } from "@/lib/validation";
@@ -28,7 +33,7 @@ function enforceLoginRateLimit() {
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
-    const input = loginSchema.parse(await request.json());
+    const input = loginSchema.parse(await readJsonWithLimit(request));
     const { user, session } = await withTransaction(async (client) => {
       const result = await client.query<{
         id: number;

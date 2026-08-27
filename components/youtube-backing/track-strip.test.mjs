@@ -56,6 +56,14 @@ test("official iframe controls and real-iframe visibility policy remain intact",
   assert.match(playerUsage, /syncEnabled=\{source\.syncEnabled\}/);
 });
 
+test("a failed YouTube API load removes stale global and script state before retry", async () => {
+  const loader = await source("youtube-iframe-api.ts");
+  assert.match(loader, /const restoreReadyCallback = \(\) =>/);
+  assert.match(loader, /script\?\.removeEventListener\("error", fail\)/);
+  assert.match(loader, /if \(!window\.YT\?\.Player\) script\?\.remove\(\)/);
+  assert.match(loader, /apiPromise = null/);
+});
+
 test("transport and saved sync callbacks use stable refs rather than parent callback identity", async () => {
   const section = await source("YouTubeBackingSection.tsx");
 

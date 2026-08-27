@@ -13,6 +13,7 @@ test("new installations use generic account defaults", () => {
     accountProfileSchema.safeParse({
       username: DEFAULT_ACCOUNT_USERNAME,
       displayName: DEFAULT_ACCOUNT_DISPLAY_NAME,
+      expectedRevision: 0,
     }).success,
     true,
   );
@@ -22,20 +23,38 @@ test("account profile accepts and trims safe Korean identity fields", () => {
   const result = accountProfileSchema.parse({
     username: "  riff_기타  ",
     displayName: "  나의 스케치북  ",
+    expectedRevision: 3,
   });
   assert.deepEqual(result, {
     username: "riff_기타",
     displayName: "나의 스케치북",
+    expectedRevision: 3,
   });
 });
 
 test("account profile rejects unsafe identity characters", () => {
   assert.equal(
-    accountProfileSchema.safeParse({ username: "bad name", displayName: "리프" }).success,
+    accountProfileSchema.safeParse({
+      username: "bad name",
+      displayName: "리프",
+      expectedRevision: 0,
+    }).success,
     false,
   );
   assert.equal(
-    accountProfileSchema.safeParse({ username: "guitarist", displayName: "리프\n관리자" }).success,
+    accountProfileSchema.safeParse({
+      username: "guitarist",
+      displayName: "리프\n관리자",
+      expectedRevision: 0,
+    }).success,
+    false,
+  );
+  assert.equal(
+    accountProfileSchema.safeParse({
+      username: "guitarist",
+      displayName: "리프",
+      expectedRevision: -1,
+    }).success,
     false,
   );
 });

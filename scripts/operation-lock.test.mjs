@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import fileSystemPromises, {
   chmod,
@@ -6,6 +7,7 @@ import fileSystemPromises, {
   mkdir,
   mkdtemp,
   readFile,
+  realpath,
   readdir,
   rm,
   utimes,
@@ -15,11 +17,13 @@ import { syncBuiltinESMExports } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { pathToFileURL } from "node:url";
 
 import {
   acquireOperationLock,
   OperationLockConflictError,
 } from "./operation-lock.mjs";
+import { operationChildInvocation } from "./operation-child-invocation.mjs";
 
 const roots = new Set();
 
@@ -295,7 +299,7 @@ test("a failed guard claimant never removes a replacement guard", async () => {
   }
 });
 
-test("a restore token authorizes only a no-op nested backup lease", async () => {
+test("a nested backup keeps the restore exclusion alive independently", async () => {
   const root = await testRoot();
   const restore = await acquireOperationLock("restore", { root });
   await assertConflict(
@@ -309,14 +313,20 @@ test("a restore token authorizes only a no-op nested backup lease", async () => 
     parentToken: restore.token,
   });
   assert.equal(nested.kind, "backup");
+  assert.equal(nested.effectiveKind, "restore");
   assert.equal(nested.nested, true);
-  assert.equal(nested.token, restore.token);
-  assert.equal((await readdir(lockPaths(root).leaseDirectory)).length, 1);
-  await nested.release();
-  await nested.release();
-  assert.equal((await readdir(lockPaths(root).leaseDirectory)).length, 1);
+  assert.equal(nested.parentToken, restore.token);
+  assert.notEqual(nested.token, restore.token);
+  assert.equal((await readdir(lockPaths(root).leaseDirectory)).length, 2);
 
   await restore.release();
+  await assertConflict(acquireOperationLock("runtime", { root }), "runtime", [
+    "restore",
+  ]);
+  await nested.release();
+  await nested.release();
+  assert.equal((await readdir(lockPaths(root).leaseDirectory)).length, 0);
+
   await assertConflict(
     acquireOperationLock("backup", { root, parentToken: restore.token }),
     "backup",
@@ -324,7 +334,7 @@ test("a restore token authorizes only a no-op nested backup lease", async () => 
   );
 });
 
-test("a runtime token authorizes only a no-op nested runtime lease", async () => {
+test("a nested runtime keeps the runtime exclusion alive independently", async () => {
   const root = await testRoot();
   const runtime = await acquireOperationLock("runtime", { root });
   await assertConflict(
@@ -338,19 +348,139 @@ test("a runtime token authorizes only a no-op nested runtime lease", async () =>
     parentToken: runtime.token,
   });
   assert.equal(nested.kind, "runtime");
+  assert.equal(nested.effectiveKind, "runtime");
   assert.equal(nested.nested, true);
-  assert.equal(nested.token, runtime.token);
-  assert.equal((await readdir(lockPaths(root).leaseDirectory)).length, 1);
-  await nested.release();
-  await nested.release();
-  assert.equal((await readdir(lockPaths(root).leaseDirectory)).length, 1);
+  assert.equal(nested.parentToken, runtime.token);
+  assert.notEqual(nested.token, runtime.token);
+  assert.equal((await readdir(lockPaths(root).leaseDirectory)).length, 2);
 
   await runtime.release();
+  await assertConflict(acquireOperationLock("runtime", { root }), "runtime", [
+    "runtime",
+  ]);
+  await nested.release();
+  await nested.release();
+  assert.equal((await readdir(lockPaths(root).leaseDirectory)).length, 0);
+
   await assertConflict(
     acquireOperationLock("runtime", { root, parentToken: runtime.token }),
     "runtime",
     [],
   );
+});
+
+test("a nested command inherits every parent kind's exclusion semantics", async () => {
+  for (const parentKind of ["runtime", "backup", "doctor", "restore"]) {
+    const root = await testRoot();
+    const parent = await acquireOperationLock(parentKind, { root });
+    const child = await acquireOperationLock("doctor", {
+      root,
+      parentToken: parent.token,
+    });
+    assert.equal(child.kind, "doctor");
+    assert.equal(child.effectiveKind, parentKind);
+    assert.equal(child.nested, true);
+    assert.equal(child.parentToken, parent.token);
+    await parent.release();
+    await assertConflict(acquireOperationLock("doctor", { root }), "doctor", [
+      parentKind,
+    ]);
+    await child.release();
+  }
+});
+
+test("operation child capabilities stay in a private environment chain", () => {
+  const firstToken = randomUUID();
+  const secondToken = randomUUID();
+  const invocation = operationChildInvocation("/usr/bin/true", ["--probe"], {
+    leases: [
+      { root: "/first/root", token: firstToken },
+      { root: "/second/root", token: secondToken },
+    ],
+    commandLease: { root: "/first/root", token: firstToken },
+    environment: { PATH: "/usr/bin:/bin" },
+  });
+
+  assert.equal(invocation.command, process.execPath);
+  assert.deepEqual(invocation.args.slice(-2), ["/usr/bin/true", "--probe"]);
+  assert.equal(invocation.args.includes(firstToken), false);
+  assert.equal(invocation.args.includes(secondToken), false);
+  assert.equal(invocation.environment.RIFF_OPERATION_PARENT_TOKEN, firstToken);
+  assert.equal(invocation.environment.RIFF_OPERATION_ROOT, "/first/root");
+  assert.equal(invocation.environment.RIFF_OPERATION_COMMAND_LEASE_INDEX, "0");
+  assert.deepEqual(JSON.parse(invocation.environment.RIFF_OPERATION_CHAIN), [
+    { root: "/second/root", token: secondToken },
+  ]);
+});
+
+test("a multi-root wrapper gives a db-init-like consumer the selected root lease", async () => {
+  const sourceRoot = await testRoot();
+  const supportRoot = await testRoot();
+  const outputPath = path.join(sourceRoot, "consumer-result.json");
+  const sourceParent = await acquireOperationLock("runtime", {
+    root: sourceRoot,
+  });
+  const supportParent = await acquireOperationLock("runtime", {
+    root: supportRoot,
+  });
+  const moduleUrl = pathToFileURL(
+    path.join(import.meta.dirname, "operation-lock.mjs"),
+  ).href;
+  const consumer = `
+    const { writeFile } = await import("node:fs/promises");
+    const { acquireOperationLock } = await import(${JSON.stringify(moduleUrl)});
+    const lease = await acquireOperationLock("doctor", {
+      root: process.cwd(),
+      parentToken: process.env.RIFF_OPERATION_PARENT_TOKEN,
+    });
+    await writeFile(process.env.RIFF_TEST_OUTPUT, JSON.stringify({
+      parentToken: lease.parentToken,
+      effectiveKind: lease.effectiveKind,
+      root: process.cwd(),
+    }));
+    await lease.release();
+  `;
+  const commandLease = { root: sourceRoot, token: sourceParent.token };
+  const invocation = operationChildInvocation(
+    process.execPath,
+    ["--input-type=module", "--eval", consumer],
+    {
+      leases: [
+        commandLease,
+        { root: supportRoot, token: supportParent.token },
+      ],
+      commandLease,
+      environment: { ...process.env, RIFF_TEST_OUTPUT: outputPath },
+    },
+  );
+
+  try {
+    const result = await new Promise((resolve, reject) => {
+      const child = spawn(invocation.command, invocation.args, {
+        cwd: sourceRoot,
+        env: invocation.environment,
+        stdio: ["ignore", "ignore", "pipe"],
+      });
+      let stderr = "";
+      child.stderr.setEncoding("utf8");
+      child.stderr.on("data", (chunk) => {
+        stderr += chunk;
+      });
+      child.once("error", reject);
+      child.once("exit", (code, signal) => resolve({ code, signal, stderr }));
+    });
+    assert.deepEqual(result, { code: 0, signal: null, stderr: "" });
+    const consumerResult = JSON.parse(await readFile(outputPath, "utf8"));
+    assert.equal(await realpath(consumerResult.root), await realpath(sourceRoot));
+    assert.equal(consumerResult.effectiveKind, "runtime");
+    assert.notEqual(consumerResult.parentToken, sourceParent.token);
+    assert.notEqual(consumerResult.parentToken, supportParent.token);
+    assert.equal((await readdir(lockPaths(sourceRoot).leaseDirectory)).length, 1);
+    assert.equal((await readdir(lockPaths(supportRoot).leaseDirectory)).length, 1);
+  } finally {
+    await supportParent.release();
+    await sourceParent.release();
+  }
 });
 
 test("unsupported kinds and options are rejected before creating lock state", async () => {

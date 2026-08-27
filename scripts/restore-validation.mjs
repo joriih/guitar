@@ -1,5 +1,16 @@
 import path from "node:path";
 
+const RESTORABLE_AUDIO_PATH_PATTERN =
+  /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.(?:webm|ogg|wav|aiff|mp3|m4a|aac|flac|opus)$/i;
+
+export function isRestorableAudioStoragePath(value) {
+  return (
+    typeof value === "string" &&
+    path.basename(value) === value &&
+    RESTORABLE_AUDIO_PATH_PATTERN.test(value)
+  );
+}
+
 export function assertRestoredCounts(actual, expected) {
   for (const key of Object.keys(expected)) {
     if (Number(actual?.[key]) !== Number(expected[key])) {
@@ -15,16 +26,37 @@ function storageKey(item) {
 }
 
 export function assertStorageExact(actualRows, expectedFiles) {
-  const expected = new Set(expectedFiles.map(storageKey));
+  const expected = new Set();
+  for (const item of expectedFiles) {
+    const storagePath = item.name ?? item.storage_path;
+    const byteSize = Number(item.bytes ?? item.byte_size);
+    if (
+      !isRestorableAudioStoragePath(storagePath) ||
+      (item.kind !== "take" && item.kind !== "track") ||
+      !Number.isSafeInteger(byteSize) ||
+      byteSize <= 0
+    ) {
+      throw new Error("manifest에 안전하지 않은 오디오 정보가 있어요.");
+    }
+    const key = storageKey({
+      kind: item.kind,
+      name: storagePath,
+      bytes: byteSize,
+    });
+    if (expected.has(key)) {
+      throw new Error(`manifest에 중복 오디오 정보가 있어요: ${storagePath}`);
+    }
+    expected.add(key);
+  }
   const actual = new Set();
   for (const row of actualRows) {
     const storagePath = String(row.storage_path);
     const byteSize = Number(row.byte_size);
     if (
-      path.basename(storagePath) !== storagePath ||
+      !isRestorableAudioStoragePath(storagePath) ||
       (row.kind !== "take" && row.kind !== "track") ||
       !Number.isSafeInteger(byteSize) ||
-      byteSize < 0
+      byteSize <= 0
     ) {
       throw new Error("복원된 데이터베이스에 안전하지 않은 오디오 정보가 있어요.");
     }
@@ -53,4 +85,3 @@ export function databaseStateMatchesManifest(actual, expectedCounts, expectedFil
     return false;
   }
 }
-
