@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   assertRuntimeSymlinksStayInside,
+  macosBundleSigningSteps,
   mergeOwnedDirectoryAdditively,
 } from "./install-macos-app.mjs";
 
@@ -69,6 +70,39 @@ test("the macOS launcher opens only its independent local runtime", async () => 
   assert.match(startApp, /isWithinStartingGrace\(state\)/);
   assert.match(startApp, /if \(!fileStat\.isDirectory\(\) \|\| fileStat\.isSymbolicLink\(\)\) return fileStat\.mtimeMs/);
   assert.match(startApp, /Directory mtimes are not\s*\n\s*\/\/ build inputs/);
+});
+
+test("the completed bundle is ad-hoc signed and strictly verified before replacement", async () => {
+  const bundlePath = "/tmp/Riff Sketchbook.app";
+  assert.deepEqual(macosBundleSigningSteps(bundlePath), [
+    {
+      command: "/usr/bin/codesign",
+      args: ["--force", "--deep", "--sign", "-", bundlePath],
+      failureMessage: "Mac 앱 임시 서명에 실패했어요",
+    },
+    {
+      command: "/usr/bin/codesign",
+      args: ["--verify", "--deep", "--strict", bundlePath],
+      failureMessage: "Mac 앱 서명 검증에 실패했어요",
+    },
+  ]);
+
+  const installer = await projectFile("scripts", "install-macos-app.mjs");
+  const createBundleStart = installer.indexOf("async function createBundle");
+  const createBundleEnd = installer.indexOf("async function swapManagedDirectory");
+  const createBundle = installer.slice(createBundleStart, createBundleEnd);
+  assert.ok(createBundleStart >= 0 && createBundleEnd > createBundleStart);
+  assert.ok(
+    createBundle.indexOf("await chmod(executablePath, 0o755)")
+      < createBundle.indexOf("macosBundleSigningSteps(TEMP_APP_PATH)"),
+  );
+  assert.match(createBundle, /await runBundleSigningStep\(signingStep, installLeaseToken\)/);
+  assert.doesNotMatch(installer, /command:\s*"\/usr\/sbin\/spctl"/);
+  assert.doesNotMatch(installer, /args:\s*\[[^\]]*"--options"/);
+
+  const createCall = installer.indexOf("await createBundle(installLease.token)");
+  const runtimeSwap = installer.indexOf("await swapManagedDirectory(\n      RUNTIME_PATH");
+  assert.ok(createCall >= 0 && runtimeSwap > createCall);
 });
 
 test("launcher replacement is managed, atomic, and rollback-safe", async () => {

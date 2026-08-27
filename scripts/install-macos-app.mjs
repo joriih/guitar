@@ -689,6 +689,42 @@ async function rewriteBuildPaths(nextDirectory) {
   await visit(nextDirectory);
 }
 
+export function macosBundleSigningSteps(bundlePath) {
+  return [
+    {
+      command: "/usr/bin/codesign",
+      args: ["--force", "--deep", "--sign", "-", bundlePath],
+      failureMessage: "Mac 앱 임시 서명에 실패했어요",
+    },
+    {
+      command: "/usr/bin/codesign",
+      args: ["--verify", "--deep", "--strict", bundlePath],
+      failureMessage: "Mac 앱 서명 검증에 실패했어요",
+    },
+  ];
+}
+
+async function runBundleSigningStep(step, installLeaseToken) {
+  await new Promise((resolve, reject) => {
+    const invocation = operationChildInvocation(step.command, step.args, {
+      leases: [{ root: SUPPORT_DIRECTORY, token: installLeaseToken }],
+      environment: process.env,
+    });
+    const child = spawn(invocation.command, invocation.args, {
+      cwd: PROJECT_DIRECTORY,
+      env: invocation.environment,
+      stdio: "inherit",
+    });
+    child.once("error", (error) => {
+      reject(new Error(`${step.failureMessage}: ${error.message}`, { cause: error }));
+    });
+    child.once("exit", (code, signal) => {
+      if (code === 0) resolve();
+      else reject(new Error(`${step.failureMessage} (${signal ?? code}).`));
+    });
+  });
+}
+
 async function createBundle(installLeaseToken) {
   await mkdir(path.join(TEMP_APP_PATH, "Contents", "MacOS"), {
     recursive: true,
@@ -760,6 +796,12 @@ async function createBundle(installLeaseToken) {
     throw new Error("Mac 앱 실행 파일에 원본 프로젝트 경로가 남아 설치를 중단했어요.");
   }
   await chmod(executablePath, 0o755);
+  // Sign only after every bundle resource and executable permission is final.
+  // A local ad-hoc signature is intentionally verified with codesign itself;
+  // Gatekeeper's spctl may reject ad-hoc apps as a distribution-policy choice.
+  for (const signingStep of macosBundleSigningSteps(TEMP_APP_PATH)) {
+    await runBundleSigningStep(signingStep, installLeaseToken);
+  }
 }
 
 async function swapManagedDirectory(target, replacement, backup, replacingExisting) {
