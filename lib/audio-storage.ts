@@ -7,6 +7,10 @@ import { randomUUID } from "node:crypto";
 
 import { ApiError } from "@/lib/http";
 import { preflightAudioFile } from "@/lib/audio-file-format";
+import {
+  audioContentDispositionHeader,
+  type AudioContentDisposition,
+} from "@/lib/audio-download";
 import { isValidAudioStoragePath } from "@/lib/audio-storage-path";
 
 export { normalizeMimeType } from "@/lib/audio-file-format";
@@ -161,14 +165,22 @@ export function audioStreamResponse(options: {
   mimeType: string;
   byteSize: number;
   fileName: string;
+  disposition?: AudioContentDisposition;
 }): Response {
-  const { request, absolutePath, mimeType, byteSize, fileName } = options;
+  const {
+    request,
+    absolutePath,
+    mimeType,
+    byteSize,
+    fileName,
+    disposition = "inline",
+  } = options;
   const range = request.headers.get("range");
   const baseHeaders = new Headers({
     "Accept-Ranges": "bytes",
     "Cache-Control": "private, no-store",
     "Content-Type": mimeType,
-    "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+    "Content-Disposition": audioContentDispositionHeader(disposition, fileName),
     "X-Content-Type-Options": "nosniff",
   });
   const rangeNotSatisfiable = () => {

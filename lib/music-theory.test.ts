@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node's type-stripping test runner requires the .ts extension.
-import { degreeName, getCapoMappings, getFretPositionWindows, getMatchingCapoShapes, getNoteIndex, getPatternDegreeName, getPatternIntervals, getPatternNotes, modulo12, noteName, transposeNote } from "./music-theory.ts";
+import { degreeName, formatMusicXmlChordSymbol, getCapoMappings, getFretPositionWindows, getMatchingCapoShapes, getNoteIndex, getPatternDegreeName, getPatternIntervals, getPatternNotes, modulo12, musicXmlPitchToNoteName, noteName, resolveMusicXmlChordKind, transposeNote } from "./music-theory.ts";
 
 test("note helpers normalize octaves and enharmonic names", () => {
   assert.equal(modulo12(-1), 11);
@@ -28,6 +28,33 @@ test("chord extensions keep compound degree labels while pitch classes stay norm
   assert.equal(getPatternDegreeName("chord", "Dominant 11th", 5), "11");
   assert.equal(getPatternDegreeName("chord", "Dominant 13th", 9), "13");
   assert.equal(getPatternDegreeName("chord", "Major 6th", 9), "6");
+});
+
+test("MusicXML chord kinds map to reusable chord-tone patterns", () => {
+  assert.deepEqual(resolveMusicXmlChordKind("major-seventh"), {
+    patternName: "Major 7th",
+    suffix: "maj7",
+  });
+  assert.equal(resolveMusicXmlChordKind("half-diminished")?.patternName, "Minor 7th b5");
+  assert.equal(resolveMusicXmlChordKind("other", "m11")?.patternName, "Minor 11th");
+  assert.equal(resolveMusicXmlChordKind("other", "not-known"), null);
+  assert.deepEqual(getPatternNotes("C", "chord", "Dominant 9th"), ["C", "E", "G", "Bb", "D"]);
+  assert.deepEqual(getPatternNotes("F#", "chord", "Major 7th"), ["F#", "A#", "C#", "E#"]);
+  assert.equal(getPatternDegreeName("chord", "Diminished 7th", 6), "♭5");
+  assert.deepEqual(getPatternNotes("Eb", "chord", "Diminished 7th"), ["Eb", "Gb", "Bbb", "Dbb"]);
+});
+
+test("MusicXML accidentals and slash bass symbols stay readable", () => {
+  assert.equal(musicXmlPitchToNoteName("B", -1), "Bb");
+  assert.equal(musicXmlPitchToNoteName("F", 1), "F#");
+  assert.equal(musicXmlPitchToNoteName("H", 0), null);
+  assert.equal(formatMusicXmlChordSymbol({
+    rootStep: "B",
+    rootAlter: -1,
+    kindValue: "minor-seventh",
+    bassStep: "E",
+    bassAlter: -1,
+  }), "B♭m7/E♭");
 });
 
 test("fret windows cover the requested fretboard without claiming fingering shapes", () => {

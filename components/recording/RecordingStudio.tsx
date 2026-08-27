@@ -93,6 +93,7 @@ import {
   preferredRecorderMimeType,
   registerTapTempo,
   responseError,
+  takeOriginalDownloadUrl,
   type TapTempoState,
 } from "./utils";
 import {
@@ -3329,6 +3330,14 @@ export function RecordingStudio({
                         <Star aria-hidden="true" size={16} />
                       )}
                     </button>
+                    <a
+                      href={takeOriginalDownloadUrl(take.id)}
+                      download
+                      aria-label={`${take.name} 원본 파일 받기`}
+                      title="원본 파일 받기"
+                    >
+                      <Download aria-hidden="true" size={16} />
+                    </a>
                     <button
                       type="button"
                       aria-label={`${take.name} 복제`}
@@ -3478,8 +3487,15 @@ export function RecordingStudio({
               >
                 <Scissors aria-hidden="true" size={15} /> 재생 위치에서 나누기
               </button>
+              <a
+                className={styles.downloadTakeButton}
+                href={takeOriginalDownloadUrl(selectedTake.id)}
+                download
+              >
+                <Download aria-hidden="true" size={15} /> 원본 파일 받기
+              </a>
               <p className={styles.inspectorHint}>
-                시작 위치는 여러 트랙에서 이 테이크가 들어올 시점을 정해요. 파형을 재생해 위치를 잡은 뒤 두 구간으로 나눌 수도 있어요.
+                시작 위치는 여러 트랙에서 이 테이크가 들어올 시점을 정해요. 파일 받기는 자르기 전 원본 녹음을 그대로 저장합니다.
               </p>
             </div>
           ) : (

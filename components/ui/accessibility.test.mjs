@@ -69,11 +69,20 @@ test("forms with reset outlines provide a full two-pixel replacement", async () 
 });
 
 test("advanced primary controls and small labels meet text contrast tokens", async () => {
-  const styles = await source("advanced-studio", "AdvancedStudioTools.module.css");
+  const [studio, styles] = await Promise.all([
+    source("advanced-studio", "AdvancedStudioTools.tsx"),
+    source("advanced-studio", "AdvancedStudioTools.module.css"),
+  ]);
   assert.match(styles, /--red:\s*#dc2f4b/);
   assert.match(styles, /--muted:\s*#686a64/);
   assert.doesNotMatch(styles, /color:\s*#92948d/);
   assert.doesNotMatch(styles, /color:\s*#84867f/);
+  assert.match(studio, /aria-label="전체 트랙 믹스 WAV 내보내기"/);
+  assert.match(studio, /\n\s+믹스 WAV\s*<\/button>/);
+  assert.match(
+    styles,
+    /@media \(max-width: 680px\)[\s\S]*?\.transportButtons button\s*\{[^}]*min-height:\s*44px/s,
+  );
 });
 
 test("advanced busy state disables every editable studio control", async () => {
@@ -165,4 +174,23 @@ test("recording meters and compact mobile options expose their real values witho
   );
   assert.doesNotMatch(advanced, /role="table" aria-label="Comp 구간 목록"/);
   assert.doesNotMatch(advanced, /className=\{styles\.compRow\} role="row"/);
+});
+
+test("saved takes expose original-file downloads with mobile-size controls", async () => {
+  const [recording, recordingStyles] = await Promise.all([
+    source("recording", "RecordingStudio.tsx"),
+    source("recording", "RecordingStudio.module.css"),
+  ]);
+  assert.equal((recording.match(/href=\{takeOriginalDownloadUrl\(/g) ?? []).length, 2);
+  assert.match(recording, /aria-label=\{`\$\{take\.name\} 원본 파일 받기`\}/);
+  assert.match(recording, /파일 받기는 자르기 전 원본 녹음을 그대로 저장합니다/);
+  assert.match(recordingStyles, /\.takeActions button,\s*\.takeActions a\s*\{/);
+  assert.match(
+    recordingStyles,
+    /@media \(max-width: 700px\)[\s\S]*?\.takeActions button,\s*\.takeActions a\s*\{[^}]*width:\s*44px[^}]*height:\s*44px/s,
+  );
+  assert.match(
+    recordingStyles,
+    /@media \(max-width: 700px\)[\s\S]*?\.downloadTakeButton\s*\{[^}]*height:\s*44px/s,
+  );
 });

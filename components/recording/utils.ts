@@ -22,6 +22,10 @@ export function captureLocksStudioTransport(state: CaptureState): boolean {
   return state !== "idle";
 }
 
+export function takeOriginalDownloadUrl(takeId: string): string {
+  return `/api/takes/${encodeURIComponent(takeId)}/audio?download=1`;
+}
+
 export function createTakeMutationLock(): TakeMutationLock {
   let pendingTakeId: string | null = null;
   return {

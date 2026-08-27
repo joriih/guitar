@@ -1,6 +1,7 @@
 import { stat } from "node:fs/promises";
 
 import { requireUser } from "@/lib/auth";
+import { safeAudioDownloadFileName } from "@/lib/audio-download";
 import { audioStreamResponse, resolveAudioPath } from "@/lib/audio-storage";
 import { db } from "@/lib/db";
 import { ApiError, apiError } from "@/lib/http";
@@ -16,12 +17,13 @@ export async function GET(request: Request, { params }: Context) {
     await requireUser();
     const takeId = uuidSchema.parse((await params).takeId);
     const result = await db.query<{
+      name: string;
       storage_path: string;
       original_file_name: string;
       mime_type: string;
       byte_size: string | number;
     }>(
-      `SELECT storage_path, original_file_name, mime_type, byte_size
+      `SELECT name, storage_path, original_file_name, mime_type, byte_size
          FROM take_recording WHERE id = $1`,
       [takeId],
     );
@@ -34,12 +36,16 @@ export async function GET(request: Request, { params }: Context) {
     } catch {
       throw new ApiError(404, "녹음 파일을 찾을 수 없어요.");
     }
+    const downloadRequested = new URL(request.url).searchParams.get("download") === "1";
     return audioStreamResponse({
       request,
       absolutePath,
       mimeType: row.mime_type,
       byteSize: Number(row.byte_size),
-      fileName: row.original_file_name,
+      fileName: downloadRequested
+        ? safeAudioDownloadFileName(row.name, row.storage_path, row.mime_type)
+        : row.original_file_name,
+      disposition: downloadRequested ? "attachment" : "inline",
     });
   } catch (error) {
     return apiError(error);

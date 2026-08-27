@@ -8,8 +8,8 @@ import { getCurrentUser, hasAppUser } from "@/lib/data";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "기타 연습 도구",
-  description: "스케일, 코드, 프렛 구간과 카포 운지를 확인하는 기타 연습 도구",
+  title: "코드표와 기타 연습",
+  description: "MusicXML 코드표를 열어 곡의 코드톤과 프렛 위치를 함께 익히는 개인 기타 연습 공간",
 };
 
 export default async function PracticePage() {

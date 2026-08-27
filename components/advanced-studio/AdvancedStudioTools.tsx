@@ -2910,9 +2910,9 @@ export function AdvancedStudioTools({
           >
             <Square size={14} aria-hidden="true" />
           </button>
-          <button type="button" className={styles.exportButton} onClick={() => void exportMix()} disabled={studioControlsLocked}>
+          <button type="button" className={styles.exportButton} onClick={() => void exportMix()} disabled={studioControlsLocked} aria-label="전체 트랙 믹스 WAV 내보내기">
             {busy === "export" ? <LoaderCircle className={styles.spin} size={15} aria-hidden="true" /> : <Download size={15} aria-hidden="true" />}
-            WAV
+            믹스 WAV
           </button>
         </div>
       </div>
