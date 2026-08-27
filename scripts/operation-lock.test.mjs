@@ -204,6 +204,10 @@ test("a failed guard claimant never removes a replacement guard", async () => {
   const root = await testRoot();
   const paths = lockPaths(root);
   const ownerPath = path.join(paths.guardDirectory, "owner.json");
+  const firstGuardMarkerPath = path.join(
+    paths.guardDirectory,
+    "first-claimant-marker",
+  );
   const firstGuardPaused = deferred();
   const resumeFirstGuard = deferred();
   const replacementOwnerPaused = deferred();
@@ -244,7 +248,7 @@ test("a failed guard claimant never removes a replacement guard", async () => {
   try {
     firstAcquisition = acquireOperationLock("runtime", { root });
     await firstGuardPaused.promise;
-    const firstGuardStat = await lstat(paths.guardDirectory);
+    await writeFile(firstGuardMarkerPath, "first claimant\n", { mode: 0o600 });
     const staleTime = new Date(Date.now() - 10_000);
     await utimes(paths.guardDirectory, staleTime, staleTime);
 
@@ -252,7 +256,13 @@ test("a failed guard claimant never removes a replacement guard", async () => {
     await replacementOwnerPaused.promise;
     const replacementGuardStat = await lstat(paths.guardDirectory);
     const replacementOwner = JSON.parse(await readFile(ownerPath, "utf8"));
-    assert.notEqual(replacementGuardStat.ino, firstGuardStat.ino);
+    assert.equal(
+      await lstat(firstGuardMarkerPath).catch((error) => {
+        if (error?.code === "ENOENT") return null;
+        throw error;
+      }),
+      null,
+    );
 
     resumeFirstGuard.resolve();
     await assert.rejects(firstAcquisition, { code: "EEXIST" });
