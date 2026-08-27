@@ -1,5 +1,15 @@
 import { constants as fsConstants } from "node:fs";
-import { access, lstat, readdir } from "node:fs/promises";
+import {
+  access,
+  lstat,
+  mkdir,
+  open,
+  readFile,
+  readdir,
+  rename,
+  unlink,
+} from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import net from "node:net";
 import path from "node:path";
 import process from "node:process";
@@ -15,7 +25,17 @@ import {
   acquireOperationLock,
   OperationLockConflictError,
 } from "./operation-lock.mjs";
+import {
+  inspectProcessIdentity,
+  PROCESS_IDENTITY_STATUS,
+  readProcessStartSignature,
+} from "./process-identity.mjs";
 import { assertNoIncompleteRestoreState } from "./restore-state.mjs";
+import {
+  createServerProcessState,
+  isServerProcessState,
+  isWithinStartingGrace,
+} from "./server-process-state.mjs";
 
 const { loadEnvConfig } = nextEnv;
 loadEnvConfig(process.cwd(), false);
@@ -24,13 +44,35 @@ loadEnvConfig(process.cwd(), false);
 // starting a listener. The returned list is also deliberately evaluated here
 // even though the server validates every mutation independently.
 allowedAppOrigins(process.env.APP_ORIGIN, process.env.RIFF_REMOTE_ACCESS);
-const LOCAL_APP_URL = DEFAULT_APP_ORIGIN;
+const localPortValue = process.env.RIFF_LOCAL_APP_PORT;
+if (
+  localPortValue !== undefined &&
+  (!/^[0-9]{1,5}$/.test(localPortValue) ||
+    Number(localPortValue) < 1024 ||
+    Number(localPortValue) > 65_535)
+) {
+  throw new Error("RIFF_LOCAL_APP_PORT는 1024~65535 사이의 포트여야 해요.");
+}
+const APP_PORT = localPortValue === undefined ? 3000 : Number(localPortValue);
+const LOCAL_APP_URL =
+  APP_PORT === 3000
+    ? DEFAULT_APP_ORIGIN
+    : `http://127.0.0.1:${String(APP_PORT)}`;
 const BROWSER_URL = process.env.APP_ORIGIN
   ? normalizeAppOrigin(process.env.APP_ORIGIN)
-  : DEFAULT_APP_ORIGIN;
-const APP_PORT = 3000;
+  : LOCAL_APP_URL;
 const POSTGRES_BIN =
   process.env.POSTGRES_BIN ?? "/Applications/Postgres.app/Contents/Versions/latest/bin";
+const SERVER_STATE_PATH = process.env.RIFF_SERVER_STATE_PATH;
+if (SERVER_STATE_PATH !== undefined) {
+  delete process.env.RIFF_SERVER_STATE_PATH;
+  if (
+    !path.isAbsolute(SERVER_STATE_PATH) ||
+    path.basename(SERVER_STATE_PATH) !== "server-process.json"
+  ) {
+    throw new Error("설치 앱의 서버 상태 파일 경로가 올바르지 않아요.");
+  }
+}
 const BUILD_INPUTS = [
   "app",
   "components",
@@ -120,8 +162,12 @@ async function newestMtime(filePath) {
     throw error;
   });
   if (!fileStat) return 0;
-  let newest = fileStat.mtimeMs;
-  if (!fileStat.isDirectory() || fileStat.isSymbolicLink()) return newest;
+  if (!fileStat.isDirectory() || fileStat.isSymbolicLink()) return fileStat.mtimeMs;
+
+  // Copying a built app necessarily gives its destination directories a new
+  // mtime even when every source file is unchanged. Directory mtimes are not
+  // build inputs; only the files beneath them are.
+  let newest = 0;
 
   for (const entry of await readdir(filePath)) {
     newest = Math.max(newest, await newestMtime(path.join(filePath, entry)));
@@ -157,6 +203,120 @@ async function portHasListener() {
     socket.once("connect", () => finish(true));
     socket.once("error", () => finish(false));
   });
+}
+
+async function readServerState() {
+  if (SERVER_STATE_PATH === undefined) return null;
+  const stateStat = await lstat(SERVER_STATE_PATH).catch((error) => {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  });
+  if (!stateStat) return null;
+  if (!stateStat.isFile() || stateStat.isSymbolicLink()) {
+    throw new Error("설치 앱의 서버 상태 파일이 안전하지 않아요.");
+  }
+  let value;
+  try {
+    value = JSON.parse(await readFile(SERVER_STATE_PATH, "utf8"));
+  } catch {
+    throw new Error("설치 앱의 서버 상태 파일이 손상됐어요.");
+  }
+  if (!isServerProcessState(value, process.cwd())) {
+    throw new Error("설치 앱의 서버 상태 파일 내용이 올바르지 않아요.");
+  }
+  return value;
+}
+
+async function assertNoOrphanServer() {
+  const state = await readServerState();
+  if (!state) return;
+  const identityStatus = await inspectProcessIdentity(
+    state.pid,
+    state.processStart,
+  );
+  if (identityStatus === PROCESS_IDENTITY_STATUS.INDETERMINATE) {
+    throw new Error(
+      "이전 Riff Sketchbook 서버 상태를 안전하게 확인할 수 없어요. Mac을 재시작한 뒤 다시 열어 주세요.",
+    );
+  }
+  if (identityStatus === PROCESS_IDENTITY_STATUS.LIVE) {
+    throw new Error(
+      "이전 Riff Sketchbook 서버가 아직 실행 중이에요. Mac을 재시작한 뒤 다시 열어 주세요.",
+    );
+  }
+  if (isWithinStartingGrace(state)) {
+    throw new Error(
+      "이전 Riff Sketchbook 서버가 시작 중이었어요. 잠시 기다린 뒤 다시 열어 주세요.",
+    );
+  }
+  await unlink(SERVER_STATE_PATH);
+}
+
+async function writeServerState(state) {
+  if (SERVER_STATE_PATH === undefined) return;
+  const directory = path.dirname(SERVER_STATE_PATH);
+  await mkdir(directory, { recursive: true, mode: 0o700 });
+  const directoryStat = await lstat(directory);
+  if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) {
+    throw new Error("설치 앱의 상태 폴더가 안전하지 않아요.");
+  }
+  const temporaryPath = `${SERVER_STATE_PATH}.${randomUUID()}.tmp`;
+  let handle;
+  try {
+    handle = await open(temporaryPath, "wx", 0o600);
+    await handle.writeFile(`${JSON.stringify(state)}\n`, "utf8");
+    await handle.sync();
+    await handle.close();
+    handle = null;
+    await rename(temporaryPath, SERVER_STATE_PATH);
+  } catch (error) {
+    await handle?.close().catch(() => undefined);
+    await unlink(temporaryPath).catch(() => undefined);
+    throw error;
+  }
+}
+
+async function writeStartingServerState() {
+  if (SERVER_STATE_PATH === undefined) return null;
+  const state = createServerProcessState({
+    phase: "starting",
+    pid: process.pid,
+    processStart: await readProcessStartSignature(process.pid, {
+      required: true,
+    }),
+    runtimePath: process.cwd(),
+  });
+  await writeServerState(state);
+  return state;
+}
+
+async function writeRunningServerState(child) {
+  if (SERVER_STATE_PATH === undefined) return null;
+  const state = createServerProcessState({
+    phase: "running",
+    pid: child.pid,
+    processStart: await readProcessStartSignature(child.pid, {
+      required: true,
+    }),
+    runtimePath: process.cwd(),
+  });
+  await writeServerState(state);
+  return state;
+}
+
+async function clearServerState(expectedState) {
+  if (!expectedState) return;
+  const state = await readServerState();
+  if (
+    !state ||
+    state.phase !== expectedState.phase ||
+    state.pid !== expectedState.pid ||
+    state.processStart !== expectedState.processStart ||
+    state.createdAt !== expectedState.createdAt
+  ) {
+    return;
+  }
+  await unlink(SERVER_STATE_PATH);
 }
 
 async function getAppStatus() {
@@ -227,26 +387,48 @@ async function waitForBrowser(child) {
 }
 
 async function startServer() {
+  const startingState = await writeStartingServerState();
   const nextBinary = path.join(process.cwd(), "node_modules", "next", "dist", "bin", "next");
-  const child = spawn(
-    process.execPath,
-    [nextBinary, "start", "--hostname", "127.0.0.1", "--port", String(APP_PORT)],
-    {
-      env: {
-        ...process.env,
-        PORT: String(APP_PORT),
+  let child;
+  try {
+    child = spawn(
+      process.execPath,
+      [nextBinary, "start", "--hostname", "127.0.0.1", "--port", String(APP_PORT)],
+      {
+        env: {
+          ...process.env,
+          PORT: String(APP_PORT),
+        },
+        stdio: "inherit",
       },
-      stdio: "inherit",
-    },
-  );
+    );
+  } catch (error) {
+    await clearServerState(startingState).catch(() => undefined);
+    throw error;
+  }
   activeChild = child;
   const exitPromise = new Promise((resolve, reject) => {
     child.once("error", reject);
     child.once("exit", (code, signal) => resolve({ code, signal }));
   });
-  await waitForBrowser(child);
-  const result = await exitPromise;
-  if (activeChild === child) activeChild = null;
+  let runningState;
+  try {
+    runningState = await writeRunningServerState(child);
+  } catch (error) {
+    child.kill("SIGTERM");
+    await exitPromise.catch(() => undefined);
+    await clearServerState(startingState).catch(() => undefined);
+    if (activeChild === child) activeChild = null;
+    throw error;
+  }
+  let result;
+  try {
+    await waitForBrowser(child);
+    result = await exitPromise;
+  } finally {
+    await clearServerState(runningState);
+    if (activeChild === child) activeChild = null;
+  }
   if (requestedSignal) return;
   if (result.code !== 0) {
     throw new Error(`Riff Sketchbook 서버가 종료됐어요 (${result.signal ?? result.code}).`);
@@ -290,8 +472,27 @@ async function main() {
     throw error;
   }
 
+  const installLockRoot = process.env.RIFF_INSTALL_LOCK_ROOT;
+  let installOperationLock = null;
   try {
+    if (installLockRoot !== undefined) {
+      delete process.env.RIFF_INSTALL_LOCK_ROOT;
+      try {
+        installOperationLock = await acquireOperationLock("runtime", {
+          root: installLockRoot,
+        });
+      } catch (error) {
+        if (
+          error instanceof OperationLockConflictError &&
+          (await handleExistingProcess(needsBuild, true))
+        ) {
+          return;
+        }
+        throw error;
+      }
+    }
     if (await handleExistingProcess(needsBuild)) return;
+    await assertNoOrphanServer();
     throwIfInterrupted();
     await ensurePostgres();
     throwIfInterrupted();
@@ -311,13 +512,22 @@ async function main() {
     );
     throwIfInterrupted();
     if (needsBuild) {
+      if (process.env.RIFF_PACKAGED_APP === "1") {
+        throw new Error(
+          "설치된 앱 실행 파일이 불완전해요. 원본 프로젝트의 Install Riff Sketchbook App.command를 다시 실행해 주세요.",
+        );
+      }
       console.log("더 빠르고 안정적인 실행을 위해 앱을 준비하고 있어요…");
       await run("npm", ["run", "build"]);
     }
     throwIfInterrupted();
     await startServer();
   } finally {
-    await operationLock.release();
+    try {
+      await installOperationLock?.release();
+    } finally {
+      await operationLock.release();
+    }
   }
 }
 

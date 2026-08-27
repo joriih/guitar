@@ -17,6 +17,7 @@ const {
   getOrCreateTakeDuplicateRequest,
   nextCycleDeadline,
   registerTapTempo,
+  takeOriginalDownloadUrl,
 } = recordingUtils;
 
 const {
@@ -69,6 +70,13 @@ test("shared studio transport stays locked through every non-idle capture phase"
   ] as const) {
     assert.equal(captureLocksStudioTransport(state), true, state);
   }
+});
+
+test("saved take downloads stay on the authenticated same-origin audio route", () => {
+  assert.equal(
+    takeOriginalDownloadUrl("take/../?private=yes"),
+    "/api/takes/take%2F..%2F%3Fprivate%3Dyes/audio?download=1",
+  );
 });
 
 test("take duplicate response-loss retry reuses one ID, then completion rotates it", () => {

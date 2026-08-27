@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import {
+import fileSystemPromises, {
   chmod,
   lstat,
   mkdir,
@@ -8,8 +8,10 @@ import {
   readFile,
   readdir,
   rm,
+  utimes,
   writeFile,
 } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -38,6 +40,14 @@ function lockPaths(root) {
 
 function permissionBits(fileStat) {
   return fileStat.mode & 0o777;
+}
+
+function deferred() {
+  let resolve;
+  const promise = new Promise((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
 }
 
 async function assertConflict(promise, kind, activeKinds) {
@@ -188,6 +198,91 @@ test("stale leases and guards require both PID and process-start signature", asy
   assert.equal(filenames[0], `runtime-${runtime.token}.json`);
   assert.equal(await lstat(paths.guardDirectory).catch(() => null), null);
   await runtime.release();
+});
+
+test("a failed guard claimant never removes a replacement guard", async () => {
+  const root = await testRoot();
+  const paths = lockPaths(root);
+  const ownerPath = path.join(paths.guardDirectory, "owner.json");
+  const firstGuardPaused = deferred();
+  const resumeFirstGuard = deferred();
+  const replacementOwnerPaused = deferred();
+  const resumeReplacementOwner = deferred();
+  const originalChmod = fileSystemPromises.chmod;
+  const originalWriteFile = fileSystemPromises.writeFile;
+  let pauseFirstGuard = true;
+  let pauseReplacementOwner = true;
+  let firstAcquisition;
+  let replacementAcquisition;
+
+  fileSystemPromises.chmod = async (...argumentsList) => {
+    const result = await originalChmod(...argumentsList);
+    if (
+      pauseFirstGuard &&
+      path.resolve(argumentsList[0]) === paths.guardDirectory
+    ) {
+      pauseFirstGuard = false;
+      firstGuardPaused.resolve();
+      await resumeFirstGuard.promise;
+    }
+    return result;
+  };
+  fileSystemPromises.writeFile = async (...argumentsList) => {
+    const result = await originalWriteFile(...argumentsList);
+    if (
+      pauseReplacementOwner &&
+      path.resolve(argumentsList[0]) === ownerPath
+    ) {
+      pauseReplacementOwner = false;
+      replacementOwnerPaused.resolve();
+      await resumeReplacementOwner.promise;
+    }
+    return result;
+  };
+  syncBuiltinESMExports();
+
+  try {
+    firstAcquisition = acquireOperationLock("runtime", { root });
+    await firstGuardPaused.promise;
+    const firstGuardStat = await lstat(paths.guardDirectory);
+    const staleTime = new Date(Date.now() - 10_000);
+    await utimes(paths.guardDirectory, staleTime, staleTime);
+
+    replacementAcquisition = acquireOperationLock("backup", { root });
+    await replacementOwnerPaused.promise;
+    const replacementGuardStat = await lstat(paths.guardDirectory);
+    const replacementOwner = JSON.parse(await readFile(ownerPath, "utf8"));
+    assert.notEqual(replacementGuardStat.ino, firstGuardStat.ino);
+
+    resumeFirstGuard.resolve();
+    await assert.rejects(firstAcquisition, { code: "EEXIST" });
+
+    const currentGuardStat = await lstat(paths.guardDirectory);
+    const currentOwner = JSON.parse(await readFile(ownerPath, "utf8"));
+    assert.equal(currentGuardStat.dev, replacementGuardStat.dev);
+    assert.equal(currentGuardStat.ino, replacementGuardStat.ino);
+    assert.equal(currentOwner.token, replacementOwner.token);
+
+    resumeReplacementOwner.resolve();
+    const replacement = await replacementAcquisition;
+    await replacement.release();
+  } finally {
+    resumeFirstGuard.resolve();
+    resumeReplacementOwner.resolve();
+    fileSystemPromises.chmod = originalChmod;
+    fileSystemPromises.writeFile = originalWriteFile;
+    syncBuiltinESMExports();
+
+    const acquisitions = [firstAcquisition, replacementAcquisition].filter(
+      Boolean,
+    );
+    const results = await Promise.allSettled(acquisitions);
+    await Promise.all(
+      results
+        .filter((result) => result.status === "fulfilled")
+        .map((result) => result.value.release()),
+    );
+  }
 });
 
 test("a restore token authorizes only a no-op nested backup lease", async () => {

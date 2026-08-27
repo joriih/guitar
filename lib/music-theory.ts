@@ -94,15 +94,18 @@ export const SCALE_PATTERNS = {
 export const CHORD_PATTERNS = {
   Major: [0, 4, 7],
   Minor: [0, 3, 7],
+  "Power 5": [0, 7],
   "Major 6th": [0, 4, 7, 9],
   "Minor 6th": [0, 3, 7, 9],
   "Dominant 7th": [0, 4, 7, 10],
   "Major 7th": [0, 4, 7, 11],
   "Minor 7th": [0, 3, 7, 10],
+  "Minor Major 7th": [0, 3, 7, 11],
   Diminished: [0, 3, 6],
   "Diminished 7th": [0, 3, 6, 9],
   "Minor 7th b5": [0, 3, 6, 10],
   Augmented: [0, 4, 8],
+  "Augmented 7th": [0, 4, 8, 10],
   Sus2: [0, 2, 7],
   Sus4: [0, 5, 7],
   Add9: [0, 4, 7, 2],
@@ -113,7 +116,11 @@ export const CHORD_PATTERNS = {
   "Minor 9th": [0, 3, 7, 10, 2],
   "Dominant 9th": [0, 4, 7, 10, 2],
   "Dominant 11th": [0, 4, 7, 10, 2, 5],
+  "Major 11th": [0, 4, 7, 11, 2, 5],
+  "Minor 11th": [0, 3, 7, 10, 2, 5],
   "Dominant 13th": [0, 4, 7, 10, 2, 5, 9],
+  "Major 13th": [0, 4, 7, 11, 2, 5, 9],
+  "Minor 13th": [0, 3, 7, 10, 2, 5, 9],
 } as const satisfies Readonly<Record<string, readonly number[]>>;
 
 export const SCALE_LABELS: Readonly<Record<keyof typeof SCALE_PATTERNS, string>> = {
@@ -146,15 +153,18 @@ export const SCALE_LABELS: Readonly<Record<keyof typeof SCALE_PATTERNS, string>>
 export const CHORD_LABELS: Readonly<Record<keyof typeof CHORD_PATTERNS, string>> = {
   Major: "메이저",
   Minor: "마이너",
+  "Power 5": "파워 5",
   "Major 6th": "메이저 6",
   "Minor 6th": "마이너 6",
   "Dominant 7th": "도미넌트 7",
   "Major 7th": "메이저 7",
   "Minor 7th": "마이너 7",
+  "Minor Major 7th": "마이너 메이저 7",
   Diminished: "디미니시드",
   "Diminished 7th": "디미니시드 7",
   "Minor 7th b5": "마이너 7 플랫 5",
   Augmented: "어그먼티드",
+  "Augmented 7th": "어그먼티드 7",
   Sus2: "서스 2",
   Sus4: "서스 4",
   Add9: "애드 9",
@@ -165,7 +175,11 @@ export const CHORD_LABELS: Readonly<Record<keyof typeof CHORD_PATTERNS, string>>
   "Minor 9th": "마이너 9",
   "Dominant 9th": "도미넌트 9",
   "Dominant 11th": "도미넌트 11",
+  "Major 11th": "메이저 11",
+  "Minor 11th": "마이너 11",
   "Dominant 13th": "도미넌트 13",
+  "Major 13th": "메이저 13",
+  "Minor 13th": "마이너 13",
 };
 
 export type ScalePatternName = keyof typeof SCALE_PATTERNS;
@@ -190,6 +204,11 @@ const FUNCTIONAL_DEGREES: Readonly<Record<number, string>> = {
 const CHORD_EXTENSION_DEGREES: Readonly<
   Partial<Record<ChordPatternName, Readonly<Record<number, string>>>>
 > = {
+  Diminished: { 6: "♭5" },
+  "Diminished 7th": { 6: "♭5", 9: "𝄫7" },
+  "Minor 7th b5": { 6: "♭5" },
+  Augmented: { 8: "♯5" },
+  "Augmented 7th": { 8: "♯5" },
   Add9: { 2: "9" },
   "Minor Add 9": { 2: "9" },
   "Major 6/9": { 2: "9" },
@@ -198,7 +217,84 @@ const CHORD_EXTENSION_DEGREES: Readonly<
   "Minor 9th": { 2: "9" },
   "Dominant 9th": { 2: "9" },
   "Dominant 11th": { 2: "9", 5: "11" },
+  "Major 11th": { 2: "9", 5: "11" },
+  "Minor 11th": { 2: "9", 5: "11" },
   "Dominant 13th": { 2: "9", 5: "11", 9: "13" },
+  "Major 13th": { 2: "9", 5: "11", 9: "13" },
+  "Minor 13th": { 2: "9", 5: "11", 9: "13" },
+};
+
+export type MusicXmlChordKind = {
+  patternName: ChordPatternName;
+  suffix: string;
+};
+
+const MUSIC_XML_CHORD_KINDS: Readonly<Record<string, MusicXmlChordKind>> = {
+  major: { patternName: "Major", suffix: "" },
+  minor: { patternName: "Minor", suffix: "m" },
+  power: { patternName: "Power 5", suffix: "5" },
+  augmented: { patternName: "Augmented", suffix: "aug" },
+  diminished: { patternName: "Diminished", suffix: "dim" },
+  dominant: { patternName: "Dominant 7th", suffix: "7" },
+  "major-seventh": { patternName: "Major 7th", suffix: "maj7" },
+  "minor-seventh": { patternName: "Minor 7th", suffix: "m7" },
+  "major-minor": { patternName: "Minor Major 7th", suffix: "m(maj7)" },
+  "augmented-seventh": { patternName: "Augmented 7th", suffix: "aug7" },
+  "diminished-seventh": { patternName: "Diminished 7th", suffix: "dim7" },
+  "half-diminished": { patternName: "Minor 7th b5", suffix: "m7♭5" },
+  "major-sixth": { patternName: "Major 6th", suffix: "6" },
+  "minor-sixth": { patternName: "Minor 6th", suffix: "m6" },
+  "dominant-ninth": { patternName: "Dominant 9th", suffix: "9" },
+  "major-ninth": { patternName: "Major 9th", suffix: "maj9" },
+  "minor-ninth": { patternName: "Minor 9th", suffix: "m9" },
+  "dominant-11th": { patternName: "Dominant 11th", suffix: "11" },
+  "major-11th": { patternName: "Major 11th", suffix: "maj11" },
+  "minor-11th": { patternName: "Minor 11th", suffix: "m11" },
+  "dominant-13th": { patternName: "Dominant 13th", suffix: "13" },
+  "major-13th": { patternName: "Major 13th", suffix: "maj13" },
+  "minor-13th": { patternName: "Minor 13th", suffix: "m13" },
+  "suspended-second": { patternName: "Sus2", suffix: "sus2" },
+  "suspended-fourth": { patternName: "Sus4", suffix: "sus4" },
+};
+
+const MUSIC_XML_KIND_TEXT_ALIASES: Readonly<Record<string, MusicXmlChordKind>> = {
+  "5": MUSIC_XML_CHORD_KINDS.power,
+  m: MUSIC_XML_CHORD_KINDS.minor,
+  min: MUSIC_XML_CHORD_KINDS.minor,
+  "6": MUSIC_XML_CHORD_KINDS["major-sixth"],
+  m6: MUSIC_XML_CHORD_KINDS["minor-sixth"],
+  min6: MUSIC_XML_CHORD_KINDS["minor-sixth"],
+  "7": MUSIC_XML_CHORD_KINDS.dominant,
+  maj7: MUSIC_XML_CHORD_KINDS["major-seventh"],
+  ma7: MUSIC_XML_CHORD_KINDS["major-seventh"],
+  "Δ7": MUSIC_XML_CHORD_KINDS["major-seventh"],
+  m7: MUSIC_XML_CHORD_KINDS["minor-seventh"],
+  min7: MUSIC_XML_CHORD_KINDS["minor-seventh"],
+  "m(maj7)": MUSIC_XML_CHORD_KINDS["major-minor"],
+  mmaj7: MUSIC_XML_CHORD_KINDS["major-minor"],
+  dim: MUSIC_XML_CHORD_KINDS.diminished,
+  "°": MUSIC_XML_CHORD_KINDS.diminished,
+  dim7: MUSIC_XML_CHORD_KINDS["diminished-seventh"],
+  "°7": MUSIC_XML_CHORD_KINDS["diminished-seventh"],
+  "m7b5": MUSIC_XML_CHORD_KINDS["half-diminished"],
+  "ø": MUSIC_XML_CHORD_KINDS["half-diminished"],
+  "ø7": MUSIC_XML_CHORD_KINDS["half-diminished"],
+  aug: MUSIC_XML_CHORD_KINDS.augmented,
+  "+": MUSIC_XML_CHORD_KINDS.augmented,
+  aug7: MUSIC_XML_CHORD_KINDS["augmented-seventh"],
+  "+7": MUSIC_XML_CHORD_KINDS["augmented-seventh"],
+  sus2: MUSIC_XML_CHORD_KINDS["suspended-second"],
+  sus4: MUSIC_XML_CHORD_KINDS["suspended-fourth"],
+  sus: MUSIC_XML_CHORD_KINDS["suspended-fourth"],
+  "9": MUSIC_XML_CHORD_KINDS["dominant-ninth"],
+  maj9: MUSIC_XML_CHORD_KINDS["major-ninth"],
+  m9: MUSIC_XML_CHORD_KINDS["minor-ninth"],
+  "11": MUSIC_XML_CHORD_KINDS["dominant-11th"],
+  maj11: MUSIC_XML_CHORD_KINDS["major-11th"],
+  m11: MUSIC_XML_CHORD_KINDS["minor-11th"],
+  "13": MUSIC_XML_CHORD_KINDS["dominant-13th"],
+  maj13: MUSIC_XML_CHORD_KINDS["major-13th"],
+  m13: MUSIC_XML_CHORD_KINDS["minor-13th"],
 };
 
 export type FretPositionWindow = {
@@ -250,6 +346,74 @@ export function transposeNote(
   return noteName(index + semitones, resolvedPreference);
 }
 
+export function musicXmlAccidentalLabel(alter: number): string {
+  const safeAlter = Math.max(-2, Math.min(2, Math.trunc(alter)));
+  if (safeAlter === -2) return "♭♭";
+  if (safeAlter === -1) return "♭";
+  if (safeAlter === 1) return "♯";
+  if (safeAlter === 2) return "♯♯";
+  return "";
+}
+
+export function musicXmlPitchLabel(step: string, alter = 0): string | null {
+  const normalizedStep = step.trim().toUpperCase();
+  if (!/^[A-G]$/.test(normalizedStep) || !Number.isInteger(alter) || Math.abs(alter) > 2) {
+    return null;
+  }
+  return `${normalizedStep}${musicXmlAccidentalLabel(alter)}`;
+}
+
+export function musicXmlPitchToNoteName(step: string, alter = 0): NoteName | null {
+  const normalizedStep = step.trim().toUpperCase();
+  const naturalIndex = getNoteIndex(normalizedStep);
+  if (naturalIndex === null || !Number.isInteger(alter) || Math.abs(alter) > 2) return null;
+  const preference = alter < 0 ? "flat" : "sharp";
+  return noteName(naturalIndex + alter, preference);
+}
+
+export function resolveMusicXmlChordKind(
+  kindValue: string,
+  kindText = "",
+): MusicXmlChordKind | null {
+  const normalizedKind = kindValue.trim().toLowerCase();
+  const byKind = MUSIC_XML_CHORD_KINDS[normalizedKind];
+  if (byKind) return byKind;
+
+  const exactText = kindText.trim().replaceAll("♭", "b").replaceAll("♯", "#");
+  if (!exactText) return null;
+  if (exactText === "M7") return MUSIC_XML_CHORD_KINDS["major-seventh"];
+  if (exactText === "M9") return MUSIC_XML_CHORD_KINDS["major-ninth"];
+  if (exactText === "M11") return MUSIC_XML_CHORD_KINDS["major-11th"];
+  if (exactText === "M13") return MUSIC_XML_CHORD_KINDS["major-13th"];
+
+  const normalizedText = exactText.toLowerCase().replaceAll(/\s+/g, "");
+  return MUSIC_XML_KIND_TEXT_ALIASES[normalizedText] ?? null;
+}
+
+export function formatMusicXmlChordSymbol({
+  rootStep,
+  rootAlter = 0,
+  kindValue,
+  kindText = "",
+  bassStep,
+  bassAlter = 0,
+}: {
+  rootStep: string;
+  rootAlter?: number;
+  kindValue: string;
+  kindText?: string;
+  bassStep?: string | null;
+  bassAlter?: number;
+}): string | null {
+  const root = musicXmlPitchLabel(rootStep, rootAlter);
+  if (!root) return null;
+  const resolvedKind = resolveMusicXmlChordKind(kindValue, kindText);
+  const fallbackSuffix = kindText.trim() || (kindValue === "major" ? "" : kindValue.trim());
+  const suffix = resolvedKind?.suffix ?? fallbackSuffix;
+  const bass = bassStep ? musicXmlPitchLabel(bassStep, bassAlter) : null;
+  return `${root}${suffix}${bass ? `/${bass}` : ""}`;
+}
+
 export function getPatternIntervals(kind: PatternKind, patternName: string): readonly number[] {
   const patterns: Readonly<Record<string, readonly number[]>> =
     kind === "scale" ? SCALE_PATTERNS : CHORD_PATTERNS;
@@ -279,12 +443,32 @@ export function getPatternNotes(
   kind: PatternKind,
   patternName: string,
   preference: AccidentalPreference = "auto",
-): NoteName[] {
+): string[] {
   const rootIndex = NOTE_INDEX[rootNote];
   const resolvedPreference = preference === "auto" ? preferredAccidental(rootNote) : preference;
-  return getPatternIntervals(kind, patternName).map((interval) =>
-    noteName(rootIndex + interval, resolvedPreference),
-  );
+  return getPatternIntervals(kind, patternName).map((interval) => {
+    if (kind !== "chord") return noteName(rootIndex + interval, resolvedPreference);
+
+    const degree = getPatternDegreeName(kind, patternName, interval);
+    const degreeNumber = degree === "R" ? 1 : Number.parseInt(degree.replaceAll(/[^0-9]/g, ""), 10);
+    if (!Number.isInteger(degreeNumber) || degreeNumber < 1) {
+      return noteName(rootIndex + interval, resolvedPreference);
+    }
+
+    const letterNames = ["C", "D", "E", "F", "G", "A", "B"] as const;
+    const rootLetterIndex = letterNames.indexOf(rootNote[0] as (typeof letterNames)[number]);
+    const targetLetter = letterNames[(rootLetterIndex + degreeNumber - 1) % letterNames.length];
+    const targetPitch = modulo12(rootIndex + interval);
+    const naturalPitch = NOTE_INDEX[targetLetter];
+    let alteration = modulo12(targetPitch - naturalPitch);
+    if (alteration > 6) alteration -= 12;
+    if (alteration === 0) return targetLetter;
+    if (alteration === 1) return `${targetLetter}#`;
+    if (alteration === -1) return `${targetLetter}b`;
+    if (alteration === 2) return `${targetLetter}##`;
+    if (alteration === -2) return `${targetLetter}bb`;
+    return noteName(targetPitch, resolvedPreference);
+  });
 }
 
 export function getFretPositionWindows(

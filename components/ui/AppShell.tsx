@@ -6,6 +6,7 @@ import {
   DEFAULT_ACCOUNT_USERNAME,
 } from "@/lib/account-defaults";
 import {
+  BookOpenText,
   Clock3,
   FolderPlus,
   Folders,
@@ -32,6 +33,7 @@ export type SidebarIconName =
   | "favorites"
   | "trash"
   | "practice"
+  | "manual"
   | "settings";
 
 export type SidebarItem = {
@@ -55,6 +57,7 @@ export const DEFAULT_SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "favorites", label: "즐겨찾기", href: "/favorites", icon: "favorites" },
   { id: "trash", label: "휴지통", href: "/trash", icon: "trash" },
   { id: "practice", label: "연습 도구", href: "/practice", icon: "practice" },
+  { id: "manual", label: "사용 안내", href: "/manual", icon: "manual" },
   { id: "settings", label: "설정", href: "/settings", icon: "settings" },
 ];
 
@@ -65,6 +68,7 @@ const sidebarIcons: Record<SidebarIconName, LucideIcon> = {
   favorites: Star,
   trash: Trash2,
   practice: Music2,
+  manual: BookOpenText,
   settings: Settings2,
 };
 

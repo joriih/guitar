@@ -216,6 +216,14 @@ function sameGuardObservation(left, right) {
   return left.status === "missing";
 }
 
+function sameDirectoryIdentity(left, right) {
+  return (
+    left.dev === right.dev &&
+    left.ino === right.ino &&
+    left.birthtimeMs === right.birthtimeMs
+  );
+}
+
 async function removeStaleGuard(paths, observed) {
   const current = await inspectGuardDirectory(paths.guardDirectory);
   if (!sameGuardObservation(observed, current)) return false;
@@ -284,14 +292,19 @@ async function acquireGuard(paths, requestedKind) {
       continue;
     }
 
+    const directoryStat = await lstatOrNull(paths.guardDirectory);
+    assertSafeDirectory(directoryStat, "operation lock guard");
+    const guard = { owner, directoryStat };
+
     try {
       await chmod(paths.guardDirectory, DIRECTORY_MODE);
       await writePrivateJson(paths.guardOwnerPath, owner);
-      return owner;
+      return guard;
     } catch (error) {
-      await rm(paths.guardDirectory, { recursive: true, force: true }).catch(
-        () => undefined,
-      );
+      // The directory may have been quarantined as an unowned stale guard and
+      // replaced while this claimant was paused. Only remove a guard that still
+      // has both this directory identity and this claimant's owner token.
+      await releaseGuard(paths, guard).catch(() => undefined);
       throw error;
     }
   }
@@ -303,13 +316,14 @@ async function acquireGuard(paths, requestedKind) {
   );
 }
 
-async function releaseGuard(paths, owner) {
+async function releaseGuard(paths, guard) {
   const current = await inspectGuardDirectory(paths.guardDirectory);
   if (
     current.status !== "owned" ||
-    current.owner.token !== owner.token ||
-    current.owner.pid !== owner.pid ||
-    current.owner.processStart !== owner.processStart
+    !sameDirectoryIdentity(current.directoryStat, guard.directoryStat) ||
+    current.owner.token !== guard.owner.token ||
+    current.owner.pid !== guard.owner.pid ||
+    current.owner.processStart !== guard.owner.processStart
   ) {
     throw new Error("operation lock guard 소유권이 바뀌어 안전하게 해제할 수 없어요.");
   }

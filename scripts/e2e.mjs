@@ -1694,6 +1694,37 @@ try {
   });
   assert.equal(response.status, 416);
 
+  response = await request(`${take.audioUrl}?download=1`, { withOrigin: false });
+  assert.equal(response.status, 200, "a saved take must export its original bytes");
+  assertNoStore(response, "take original download");
+  assert.equal(response.headers.get("content-type"), "audio/wav");
+  assert.match(
+    response.headers.get("content-disposition") ?? "",
+    /^attachment; filename="[^"]+"; filename\*=UTF-8''/,
+  );
+  assert.deepEqual(
+    Buffer.from(await response.arrayBuffer()),
+    wave,
+    "take download must not transcode or trim the original recording",
+  );
+
+  response = await request(`${take.audioUrl}?download=1`, {
+    withOrigin: false,
+    headers: { range: "bytes=0-15" },
+  });
+  assert.equal(response.status, 206, "take downloads must keep Range support");
+  assertNoStore(response, "take original download range");
+  assert.match(response.headers.get("content-disposition") ?? "", /^attachment;/);
+  assert.equal((await response.arrayBuffer()).byteLength, 16);
+
+  response = await request(`${take.audioUrl}?download=1`, {
+    withOrigin: false,
+    headers: { range: "bytes=999999-1000000" },
+  });
+  assert.equal(response.status, 416);
+  assertNoStore(response, "take original download invalid range");
+  assert.match(response.headers.get("content-disposition") ?? "", /^attachment;/);
+
   const audioFormatBaselineFiles = (await readdir(isolatedAudioDirectory)).sort();
   assert.equal(audioFormatBaselineFiles.length, 4);
   for (const genericMimeType of ["", "application/octet-stream"]) {
@@ -2798,7 +2829,7 @@ try {
   );
 
   console.log(
-    "격리 E2E 통과: 인증·세션회전, 설정, 앨범, 리프·전체복제·태그·마커·YouTube 백킹, 대형 목록 집계·200개 제한, 테이크, 분할, Comp, 트랙 M/S, Range, 휴지통",
+    "격리 E2E 통과: 인증·세션회전, 설정, 앨범, 리프·전체복제·태그·마커·YouTube 백킹, 대형 목록 집계·200개 제한, 테이크·원본 내보내기, 분할, Comp, 트랙 M/S, Range, 휴지통",
   );
 } catch (error) {
   testFailure = error;
