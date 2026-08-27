@@ -96,6 +96,28 @@ test("first setup is restricted to a loopback browser origin before any DB work"
   );
 });
 
+test("authentication JSON is content-typed and bounded before database or password work", async () => {
+  for (const [route, firstSensitiveOperation] of [
+    ["app/api/auth/login/route.ts", "await withTransaction"],
+    ["app/api/auth/setup/route.ts", "await db.query"],
+    ["app/api/account/password/route.ts", "await getSessionToken"],
+  ]) {
+    const contents = await source(route);
+    const boundedRead = contents.indexOf("await readJsonWithLimit(request)");
+    const sensitiveOperation = contents.indexOf(firstSensitiveOperation);
+    assert.ok(boundedRead > 0, route);
+    assert.ok(sensitiveOperation > boundedRead, route);
+    assert.doesNotMatch(contents, /request\.json\(\)/, route);
+  }
+
+  const requestJson = await source("lib/request-json.ts");
+  assert.match(requestJson, /AUTH_JSON_BODY_LIMIT_BYTES = 4 \* 1024/);
+  assert.match(requestJson, /mediaType !== "application\/json"/);
+  assert.match(requestJson, /request\.body\.getReader\(\)/);
+  assert.match(requestJson, /totalBytes > maximumBytes/);
+  assert.match(requestJson, /await reader\.cancel\(\)/);
+});
+
 test("session cookies derive Secure from the validated request origin", async () => {
   const session = await source("lib/session.ts");
   assert.match(session, /secure:\s*isSecureAppRequest\(request\)/);

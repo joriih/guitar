@@ -299,7 +299,11 @@ export default async function SettingsPage() {
           <p>표시 이름과 로그인 비밀번호를 안전하게 관리해요.</p>
         </header>
         <SettingsForm
-          initialUser={{ username: user.username, displayName: user.displayName }}
+          initialUser={{
+            username: user.username,
+            displayName: user.displayName,
+            revision: user.revision,
+          }}
         />
         <StorageHealthCard storage={storage} backup={backup} />
       </div>

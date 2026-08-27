@@ -8,6 +8,7 @@ import { Client } from "pg";
 import { assertLoopbackDatabaseUrl } from "./local-database-url.mjs";
 import { acquireOperationLock } from "./operation-lock.mjs";
 import { assertNoIncompleteRestoreState } from "./restore-state.mjs";
+import { isRestorableAudioStoragePath } from "./restore-validation.mjs";
 
 function loadLocalEnv() {
   const envPath = path.join(process.cwd(), ".env.local");
@@ -166,7 +167,7 @@ try {
   );
   for (const row of storageResult.rows) {
     const storagePath = String(row.storage_path);
-    if (path.basename(storagePath) !== storagePath) {
+    if (!isRestorableAudioStoragePath(storagePath)) {
       problems.push(`${row.kind}에 안전하지 않은 파일 경로가 있어요: ${storagePath}`);
       continue;
     }

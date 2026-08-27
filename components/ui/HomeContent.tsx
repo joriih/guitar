@@ -252,6 +252,7 @@ export function RecentRiffList({
             <Clock3 size={13} /> {riff.updatedLabel}
           </span>
           <RiffRowActions
+            key={`${riff.id}:${riff.revision}`}
             riffId={riff.id}
             title={riff.title}
             initialFavorite={riff.favorite}
@@ -290,9 +291,8 @@ export function HomeContent({
   activeFilter,
 }: HomeContentProps) {
   const isSearch = Boolean(searchQuery?.trim());
-  const visibleRiffCount = isSearch
-    ? totalRiffCount ?? recentRiffs.length
-    : albums.reduce((total, album) => total + album.riffCount, 0);
+  const visibleRiffCount =
+    totalRiffCount ?? albums.reduce((total, album) => total + album.riffCount, 0);
   const riffResultsTruncated = isSearch && visibleRiffCount > recentRiffs.length;
 
   return (

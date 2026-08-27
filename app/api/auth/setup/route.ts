@@ -8,7 +8,12 @@ import {
 } from "@/lib/auth-rate-limit";
 import { isLoopbackAppOrigin } from "@/lib/app-origin";
 import { db, withTransaction } from "@/lib/db";
-import { ApiError, apiError, assertSameOrigin } from "@/lib/http";
+import {
+  ApiError,
+  apiError,
+  assertSameOrigin,
+  readJsonWithLimit,
+} from "@/lib/http";
 import { hashPassword } from "@/lib/password";
 import { issueSession, setSessionCookie } from "@/lib/session";
 import { setupSchema } from "@/lib/validation";
@@ -33,7 +38,7 @@ export async function POST(request: Request) {
     if (!isLoopbackAppOrigin(request.headers.get("origin"))) {
       throw new ApiError(403, "첫 설정은 이 Mac에서 직접 완료해주세요.");
     }
-    const input = setupSchema.parse(await request.json());
+    const input = setupSchema.parse(await readJsonWithLimit(request));
     const existingUser = await db.query("SELECT 1 FROM app_user LIMIT 1");
     if (existingUser.rowCount) {
       throw new ApiError(409, "이미 첫 설정이 끝났어요. 로그인해주세요.");

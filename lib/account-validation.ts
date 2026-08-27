@@ -23,6 +23,7 @@ export const accountProfileSchema = z
   .object({
     username: usernameSchema,
     displayName: displayNameSchema,
+    expectedRevision: z.number().int().min(0),
   })
   .strict();
 

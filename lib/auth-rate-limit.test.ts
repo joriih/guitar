@@ -3,6 +3,8 @@ import test from "node:test";
 
 // @ts-expect-error Node's type-stripping test runner requires the .ts extension.
 import { AUTH_RATE_LIMIT_POLICIES, checkAuthRateLimit, clearAllAuthFailuresForTests, clearAuthFailures, recordAuthFailure, reserveAuthAttempt } from "./auth-rate-limit.ts";
+// @ts-expect-error Node's type-stripping test runner requires the .ts extension.
+import { AUTH_JSON_BODY_LIMIT_BYTES, readJsonWithLimit, RequestBodyError } from "./request-json.ts";
 
 test.beforeEach(() => clearAllAuthFailuresForTests());
 
@@ -79,4 +81,80 @@ test("password replay verification allows five reservations then blocks before w
   assert.equal(blocked.reserved, false);
   assert.equal(blocked.limited, true);
   assert.ok(blocked.retryAfterSeconds > 0);
+});
+
+function requestBodyError(status: number) {
+  return (error: unknown) =>
+    error instanceof RequestBodyError && error.status === status;
+}
+
+test("auth JSON accepts a small application/json body", async () => {
+  const request = new Request("http://127.0.0.1:43117/api/auth/login", {
+    method: "POST",
+    headers: { "content-type": "application/json; charset=utf-8" },
+    body: JSON.stringify({ password: "correct horse battery staple" }),
+  });
+  assert.deepEqual(await readJsonWithLimit(request), {
+    password: "correct horse battery staple",
+  });
+});
+
+test("auth JSON rejects a declared oversize body before reading it", async () => {
+  const request = new Request("http://127.0.0.1:43117/api/auth/login", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "content-length": String(AUTH_JSON_BODY_LIMIT_BYTES + 1),
+    },
+    body: "{}",
+  });
+  const body = request.body;
+  assert.ok(body);
+  const originalGetReader = body.getReader.bind(body);
+  let readerRequested = false;
+  Object.defineProperty(body, "getReader", {
+    value() {
+      readerRequested = true;
+      return originalGetReader();
+    },
+  });
+
+  await assert.rejects(readJsonWithLimit(request), requestBodyError(413));
+  assert.equal(readerRequested, false);
+});
+
+test("auth JSON cancels a chunked body once its streamed bytes exceed 4 KiB", async () => {
+  let chunksSent = 0;
+  let cancelled = false;
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (chunksSent === 3) {
+        controller.close();
+        return;
+      }
+      chunksSent += 1;
+      controller.enqueue(new Uint8Array(2 * 1024));
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  const request = new Request("http://127.0.0.1:43117/api/auth/login", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body,
+    duplex: "half",
+  } as RequestInit & { duplex: "half" });
+
+  await assert.rejects(readJsonWithLimit(request), requestBodyError(413));
+  assert.equal(cancelled, true);
+});
+
+test("auth JSON rejects non-JSON media types", async () => {
+  const request = new Request("http://127.0.0.1:43117/api/auth/login", {
+    method: "POST",
+    headers: { "content-type": "text/plain" },
+    body: "{}",
+  });
+  await assert.rejects(readJsonWithLimit(request), requestBodyError(415));
 });

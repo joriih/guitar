@@ -21,6 +21,7 @@ import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 import { acquireOperationLock } from "./operation-lock.mjs";
+import { operationChildInvocation } from "./operation-child-invocation.mjs";
 import {
   inspectProcessIdentity,
   PROCESS_IDENTITY_STATUS,
@@ -223,7 +224,7 @@ exec "$BUNDLED_NODE" "$APP_DIRECTORY/scripts/start-app.mjs"
 `;
 }
 
-async function runBuild() {
+async function runBuild(sourceLeaseToken) {
   const nextBinary = path.join(
     PROJECT_DIRECTORY,
     "node_modules",
@@ -234,9 +235,17 @@ async function runBuild() {
   );
   console.log("독립 실행용 앱을 준비하고 있어요…");
   await new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [nextBinary, "build"], {
+    const invocation = operationChildInvocation(
+      process.execPath,
+      [nextBinary, "build"],
+      {
+        leases: [{ root: PROJECT_DIRECTORY, token: sourceLeaseToken }],
+        environment: process.env,
+      },
+    );
+    const child = spawn(invocation.command, invocation.args, {
       cwd: PROJECT_DIRECTORY,
-      env: process.env,
+      env: invocation.environment,
       stdio: "inherit",
     });
     child.once("error", reject);
@@ -680,7 +689,7 @@ async function rewriteBuildPaths(nextDirectory) {
   await visit(nextDirectory);
 }
 
-async function createBundle() {
+async function createBundle(installLeaseToken) {
   await mkdir(path.join(TEMP_APP_PATH, "Contents", "MacOS"), {
     recursive: true,
     mode: 0o755,
@@ -713,7 +722,7 @@ async function createBundle() {
   const swiftTarget = `${process.arch === "x64" ? "x86_64" : "arm64"}-apple-macosx13.0`;
   const swiftSourcePrefixMap = `${PROJECT_DIRECTORY}=${SWIFT_SOURCE_ROOT}`;
   await new Promise((resolve, reject) => {
-    const child = spawn(
+    const invocation = operationChildInvocation(
       "/usr/bin/swiftc",
       [
         path.join(PROJECT_DIRECTORY, "scripts", "macos-launcher.swift"),
@@ -730,8 +739,16 @@ async function createBundle() {
         "-o",
         executablePath,
       ],
-      { cwd: PROJECT_DIRECTORY, env: process.env, stdio: "inherit" },
+      {
+        leases: [{ root: SUPPORT_DIRECTORY, token: installLeaseToken }],
+        environment: process.env,
+      },
     );
+    const child = spawn(invocation.command, invocation.args, {
+      cwd: PROJECT_DIRECTORY,
+      env: invocation.environment,
+      stdio: "inherit",
+    });
     child.once("error", reject);
     child.once("exit", (code, signal) => {
       if (code === 0) resolve();
@@ -811,9 +828,9 @@ async function install() {
     await assertNoIncompleteRestoreState(
       replacingExistingRuntime ? RUNTIME_PATH : PROJECT_DIRECTORY,
     );
-    await runBuild();
+    await runBuild(sourceLease.token);
     await createRuntime(replacingExistingRuntime);
-    await createBundle();
+    await createBundle(installLease.token);
     await assertRiffSketchbookStopped();
 
     await swapManagedDirectory(

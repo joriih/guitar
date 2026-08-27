@@ -21,8 +21,10 @@ import {
   assertLoopbackDatabaseUrl,
   normalizedDatabaseHostname,
 } from "./local-database-url.mjs";
+import { operationChildInvocation } from "./operation-child-invocation.mjs";
 import { acquireOperationLock } from "./operation-lock.mjs";
 import { assertNoIncompleteRestoreState } from "./restore-state.mjs";
+import { isRestorableAudioStoragePath } from "./restore-validation.mjs";
 
 let activeChild = null;
 let interruptedSignal = null;
@@ -86,9 +88,18 @@ function postgresBinary(name) {
     : `/Applications/Postgres.app/Contents/Versions/latest/bin/${name}`;
 }
 
-function run(command, args, env) {
+function run(command, args, env, { parentToken } = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { env, stdio: ["ignore", "inherit", "inherit"] });
+    const invocation = parentToken
+      ? operationChildInvocation(command, args, {
+          leases: [{ root: process.cwd(), token: parentToken }],
+          environment: env,
+        })
+      : { command, args, environment: env };
+    const child = spawn(invocation.command, invocation.args, {
+      env: invocation.environment,
+      stdio: ["ignore", "inherit", "inherit"],
+    });
     activeChild = child;
     child.once("error", (error) => {
       if (activeChild === child) activeChild = null;
@@ -173,7 +184,8 @@ async function main() {
     await run(
       process.execPath,
       [path.join(process.cwd(), "scripts", "db-init.mjs")],
-      { ...process.env, RIFF_OPERATION_PARENT_TOKEN: operationLock.token },
+      process.env,
+      { parentToken: operationLock.token },
     );
     throwIfInterrupted();
 
@@ -240,6 +252,7 @@ async function main() {
           `--file=${dumpPath}`,
         ],
         pgEnvironment,
+        { parentToken: operationLock.token },
       );
       throwIfInterrupted();
 
@@ -247,7 +260,7 @@ async function main() {
       for (const row of storageResult.rows) {
         throwIfInterrupted();
         const storagePath = String(row.storage_path);
-        if (path.basename(storagePath) !== storagePath) {
+        if (!isRestorableAudioStoragePath(storagePath)) {
           throw new Error(`Unsafe audio path in database: ${storagePath}`);
         }
         const source = path.join(sourceAudioDirectory, storagePath);

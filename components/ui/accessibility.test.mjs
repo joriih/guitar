@@ -194,3 +194,24 @@ test("saved takes expose original-file downloads with mobile-size controls", asy
     /@media \(max-width: 700px\)[\s\S]*?\.downloadTakeButton\s*\{[^}]*height:\s*44px/s,
   );
 });
+
+test("the mobile navigation modal keeps keyboard focus inside its active layer", async () => {
+  const [menu, search] = await Promise.all([
+    source("ui", "MobileNavigationMenu.tsx"),
+    source("ui", "TopBarSearch.tsx"),
+  ]);
+
+  assert.match(menu, /function closeAndRestoreFocus\(\)/);
+  assert.match(menu, /onClick=\{closeAndRestoreFocus\}/);
+  assert.match(menu, /requestAnimationFrame\(\(\) => triggerRef\.current\?\.focus\(\)\)/);
+  assert.match(search, /document\.querySelector\('\[aria-modal="true"\]'\)/);
+});
+
+test("top search remounts when navigation changes its server query", async () => {
+  const shell = await source("ui", "AppShell.tsx");
+
+  assert.match(
+    shell,
+    /<TopBarSearch[\s\S]*?key=\{`\$\{searchAction\}:\$\{searchDefaultValue \?\? ""\}`\}/,
+  );
+});

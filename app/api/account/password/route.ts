@@ -8,7 +8,12 @@ import {
   reserveAuthAttempt,
 } from "@/lib/auth-rate-limit";
 import { db, withTransaction } from "@/lib/db";
-import { ApiError, apiError, assertSameOrigin } from "@/lib/http";
+import {
+  ApiError,
+  apiError,
+  assertSameOrigin,
+  readJsonWithLimit,
+} from "@/lib/http";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import {
   decryptPasswordChangeSessionToken,
@@ -172,7 +177,9 @@ function successResponse(replay: boolean) {
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
-    const input = passwordChangeRequestSchema.parse(await request.json());
+    const input = passwordChangeRequestSchema.parse(
+      await readJsonWithLimit(request),
+    );
     const sessionToken = await getSessionToken();
     const user = await getUserForSessionToken(sessionToken);
 

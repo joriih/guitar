@@ -12,6 +12,7 @@ import {
   getCapoMappings,
   getFretPositionWindows,
   getMatchingCapoShapes,
+  getMusicXmlChordNotes,
   getNoteIndex,
   getPatternDegreeName,
   getPatternIntervals,
@@ -61,12 +62,6 @@ function modeLabel(mode: string | null): string {
   if (mode === "major") return "메이저";
   if (mode === "minor") return "마이너";
   return mode ?? "";
-}
-
-function harmonyPreference(harmony: MusicXmlHarmony): "sharp" | "flat" {
-  if (harmony.root.alter < 0) return "flat";
-  if (harmony.root.alter > 0) return "sharp";
-  return preferredAccidental(harmony.root.noteName);
 }
 
 function MiniFretboard({ harmony }: { harmony: MusicXmlHarmony }) {
@@ -344,11 +339,10 @@ export function GuitarPracticeTools() {
                         ? getPatternIntervals("chord", harmony.patternName)
                         : [];
                       const chordNotes = harmony.patternName
-                        ? getPatternNotes(
-                            harmony.root.noteName,
-                            "chord",
+                        ? getMusicXmlChordNotes(
+                            harmony.root.step,
+                            harmony.root.alter,
                             harmony.patternName,
-                            harmonyPreference(harmony),
                           )
                         : [];
                       const occurrenceCount = chart.harmonies.filter(
@@ -368,7 +362,10 @@ export function GuitarPracticeTools() {
                           </span>
                           {harmony.patternName ? (
                             <>
-                              <span className={styles.toneNotes}>{chordNotes.join(" · ")}</span>
+                              <span className={styles.toneNotes}>
+                                {chordNotes.join(" · ")}
+                                {harmony.bass ? ` / 베이스 ${harmony.bass.label}` : ""}
+                              </span>
                               <span className={styles.toneDegrees}>
                                 {chordIntervals.map((interval) =>
                                   getPatternDegreeName("chord", harmony.patternName ?? "", interval)).join("  ")}

@@ -87,10 +87,27 @@ export function loadYouTubeIframeApi(): Promise<YouTubeIframeApi> {
     let settled = false;
     let pollTimer = 0;
     let timeoutTimer = 0;
+    let script: HTMLScriptElement | null = null;
+
+    const readyCallback = () => {
+      try {
+        previousReady?.();
+      } finally {
+        finish();
+      }
+    };
+
+    const restoreReadyCallback = () => {
+      if (window.onYouTubeIframeAPIReady !== readyCallback) return;
+      if (previousReady) window.onYouTubeIframeAPIReady = previousReady;
+      else delete window.onYouTubeIframeAPIReady;
+    };
 
     const cleanup = () => {
       window.clearInterval(pollTimer);
       window.clearTimeout(timeoutTimer);
+      script?.removeEventListener("error", fail);
+      restoreReadyCallback();
     };
 
     const finish = () => {
@@ -104,19 +121,14 @@ export function loadYouTubeIframeApi(): Promise<YouTubeIframeApi> {
       if (settled) return;
       settled = true;
       cleanup();
+      if (!window.YT?.Player) script?.remove();
       apiPromise = null;
       reject(new Error("YouTube 플레이어를 불러오지 못했어요. 연결을 확인해 주세요."));
     };
 
-    window.onYouTubeIframeAPIReady = () => {
-      try {
-        previousReady?.();
-      } finally {
-        finish();
-      }
-    };
+    window.onYouTubeIframeAPIReady = readyCallback;
 
-    let script = document.getElementById(API_SCRIPT_ID) as HTMLScriptElement | null;
+    script = document.getElementById(API_SCRIPT_ID) as HTMLScriptElement | null;
     if (!script) {
       script = document.createElement("script");
       script.id = API_SCRIPT_ID;
@@ -136,4 +148,3 @@ export function loadYouTubeIframeApi(): Promise<YouTubeIframeApi> {
 
   return apiPromise;
 }
-

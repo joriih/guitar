@@ -13,6 +13,7 @@ export type SessionUser = {
   id: number;
   username: string;
   displayName: string;
+  revision: number;
 };
 
 export function digestSessionToken(token: string): Buffer {
@@ -85,8 +86,9 @@ export async function getUserForSessionToken(
     id: number;
     username: string;
     display_name: string;
+    revision: number;
   }>(
-    `SELECT u.id, u.username, u.display_name
+    `SELECT u.id, u.username, u.display_name, u.revision
        FROM app_session s
        JOIN app_user u ON u.id = s.user_id
       WHERE s.token_digest = $1
@@ -95,7 +97,12 @@ export async function getUserForSessionToken(
   );
   const row = result.rows[0];
   return row
-    ? { id: row.id, username: row.username, displayName: row.display_name }
+    ? {
+        id: row.id,
+        username: row.username,
+        displayName: row.display_name,
+        revision: row.revision,
+      }
     : null;
 }
 

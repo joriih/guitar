@@ -471,6 +471,58 @@ export function getPatternNotes(
   });
 }
 
+/**
+ * Spells MusicXML chord tones from the notated root instead of an enharmonic
+ * pitch-class alias. This keeps roots such as C-flat and B-sharp readable.
+ */
+export function getMusicXmlChordNotes(
+  rootStep: string,
+  rootAlter: number,
+  patternName: string,
+): string[] {
+  const normalizedStep = rootStep.trim().toUpperCase();
+  const naturalRoot = getNoteIndex(normalizedStep);
+  if (
+    naturalRoot === null ||
+    !/^[A-G]$/.test(normalizedStep) ||
+    !Number.isInteger(rootAlter) ||
+    Math.abs(rootAlter) > 2
+  ) {
+    return [];
+  }
+
+  const intervals = getPatternIntervals("chord", patternName);
+  const rootPitch = modulo12(naturalRoot + rootAlter);
+  const letterNames = ["C", "D", "E", "F", "G", "A", "B"] as const;
+  const rootLetterIndex = letterNames.indexOf(
+    normalizedStep as (typeof letterNames)[number],
+  );
+  const fallbackPreference = rootAlter < 0 ? "flat" : "sharp";
+
+  return intervals.map((interval) => {
+    const degree = getPatternDegreeName("chord", patternName, interval);
+    const degreeNumber = degree === "R"
+      ? 1
+      : Number.parseInt(degree.replaceAll(/[^0-9]/g, ""), 10);
+    if (!Number.isInteger(degreeNumber) || degreeNumber < 1) {
+      return noteName(rootPitch + interval, fallbackPreference);
+    }
+    const targetLetter = letterNames[
+      (rootLetterIndex + degreeNumber - 1) % letterNames.length
+    ];
+    const targetPitch = modulo12(rootPitch + interval);
+    const naturalPitch = NOTE_INDEX[targetLetter];
+    let alteration = modulo12(targetPitch - naturalPitch);
+    if (alteration > 6) alteration -= 12;
+    if (alteration === 0) return targetLetter;
+    if (alteration === 1) return `${targetLetter}#`;
+    if (alteration === -1) return `${targetLetter}b`;
+    if (alteration === 2) return `${targetLetter}##`;
+    if (alteration === -2) return `${targetLetter}bb`;
+    return noteName(targetPitch, fallbackPreference);
+  });
+}
+
 export function getFretPositionWindows(
   maxFret = 24,
   fretsPerWindow = 5,

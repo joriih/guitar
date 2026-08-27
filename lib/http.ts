@@ -3,6 +3,9 @@ import { ZodError } from "zod";
 
 import { isAllowedAppOrigin } from "@/lib/app-origin";
 import { AuthenticationError } from "@/lib/auth";
+import { RequestBodyError } from "@/lib/request-json";
+
+export { readJsonWithLimit } from "@/lib/request-json";
 
 export function apiError(error: unknown) {
   if (error instanceof AuthenticationError) {
@@ -15,6 +18,12 @@ export function apiError(error: unknown) {
     return NextResponse.json(
       { error: "입력 내용을 다시 확인해주세요.", issues: error.issues },
       { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+  if (error instanceof RequestBodyError) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: error.status, headers: { "Cache-Control": "no-store" } },
     );
   }
   if (error instanceof ApiError) {

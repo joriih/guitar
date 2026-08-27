@@ -514,6 +514,34 @@ test("track and marker create intents change with source or payload", () => {
   );
 });
 
+test("large browser retry fingerprints stream without requesting one full-size buffer", async () => {
+  const bytes = new Uint8Array([1, 2, 3, 4, 5, 6]);
+  const digestInput = (parts) => ({
+    size: 9 * 1024 * 1024,
+    arrayBuffer() {
+      throw new Error("large files must not use arrayBuffer");
+    },
+    stream() {
+      let index = 0;
+      return new ReadableStream({
+        pull(controller) {
+          const part = parts[index++];
+          if (part) controller.enqueue(part);
+          else controller.close();
+        },
+      });
+    },
+  });
+  const digest = await advancedUtils.audioFileContentDigest(
+    digestInput([bytes.subarray(0, 2), bytes.subarray(2)]),
+  );
+  const differentlyChunked = await advancedUtils.audioFileContentDigest(
+    digestInput([bytes]),
+  );
+  assert.match(digest, /^fallback-[a-f0-9]{16}$/);
+  assert.equal(digest, differentlyChunked);
+});
+
 test("failed outbox persistence never claims a rejected PATCH is safely stored", () => {
   const quotaStorage = {
     setItem() { throw new Error("QuotaExceededError"); },

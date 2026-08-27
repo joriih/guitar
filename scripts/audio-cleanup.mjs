@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { lstat, readFile, unlink } from "node:fs/promises";
+import { lstat, unlink } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -9,15 +9,12 @@ import { Client } from "pg";
 import { assertLoopbackDatabaseUrl } from "./local-database-url.mjs";
 import { acquireOperationLock } from "./operation-lock.mjs";
 import { assertNoIncompleteRestoreState } from "./restore-state.mjs";
+import { isRestorableAudioStoragePath } from "./restore-validation.mjs";
 
 const APP_ROLE = "riff_sketchbook_app";
 const MAIN_DATABASE = "riff_sketchbook";
 const ISOLATED_NAMESPACE_PATTERN =
   /^riff_sketchbook_e2e_[1-9][0-9]*_[a-f0-9]{10}$/;
-const STORED_FILE_PATTERN =
-  /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\.(webm|ogg|wav|aiff|mp3|m4a|aac|flac|opus)$/i;
-const UUID_PATTERN =
-  /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 
 function loadLocalEnv(root = process.cwd()) {
   const envPath = path.join(root, ".env.local");
@@ -74,7 +71,7 @@ export async function safeRemoveStoredAudioFile({
   namespace = null,
   storagePath,
 }) {
-  if (typeof storagePath !== "string" || !STORED_FILE_PATTERN.test(storagePath)) {
+  if (!isRestorableAudioStoragePath(storagePath)) {
     throw codedError("INVALID_AUDIO_STORAGE_PATH", "Invalid queued audio path.");
   }
   if (namespace !== null && !ISOLATED_NAMESPACE_PATTERN.test(namespace)) {
@@ -147,7 +144,7 @@ export async function drainAudioCleanup({
   for (const row of queued.rows) {
     const storagePath = String(row.storage_path);
     try {
-      if (!STORED_FILE_PATTERN.test(storagePath)) {
+      if (!isRestorableAudioStoragePath(storagePath)) {
         throw codedError("INVALID_AUDIO_STORAGE_PATH", "Invalid queued audio path.");
       }
       const reference = await client.query(
@@ -174,27 +171,6 @@ export async function drainAudioCleanup({
   return { processed: queued.rows.length, cleared, pending };
 }
 
-async function assertRuntimeParentLease(root, token) {
-  if (!UUID_PATTERN.test(token)) {
-    throw new Error("오디오 정리 parent token이 올바르지 않아요.");
-  }
-  const leasePath = path.join(
-    root,
-    "storage",
-    ".operation-lock",
-    "leases",
-    `runtime-${token}.json`,
-  );
-  const leaseStat = await lstatOrNull(leasePath);
-  if (!leaseStat?.isFile() || leaseStat.isSymbolicLink()) {
-    throw new Error("실행 중인 앱의 operation lock을 확인할 수 없어요.");
-  }
-  const lease = JSON.parse(await readFile(leasePath, "utf8"));
-  if (lease?.kind !== "runtime" || lease?.token !== token || lease?.nested !== false) {
-    throw new Error("실행 중인 앱의 operation lock 내용이 올바르지 않아요.");
-  }
-}
-
 async function main() {
   const root = process.cwd();
   loadLocalEnv(root);
@@ -219,11 +195,27 @@ async function main() {
 
   await assertNoIncompleteRestoreState(root);
   let operationLock = null;
-  const parentToken = process.env.RIFF_AUDIO_CLEANUP_PARENT_TOKEN;
+  const parentToken =
+    process.env.RIFF_OPERATION_PARENT_TOKEN ??
+    process.env.RIFF_AUDIO_CLEANUP_PARENT_TOKEN;
+  delete process.env.RIFF_OPERATION_PARENT_TOKEN;
+  delete process.env.RIFF_AUDIO_CLEANUP_PARENT_TOKEN;
   if (parentToken) {
-    await assertRuntimeParentLease(root, parentToken);
+    operationLock = await acquireOperationLock("runtime", {
+      root,
+      parentToken,
+    });
   } else if (!(isolated && process.env.RIFF_E2E_AUDIO_CLEANUP === "1")) {
     operationLock = await acquireOperationLock("runtime", { root });
+  }
+  // The preflight above is only explanatory. Recheck after the physical or
+  // nested runtime lease prevents a restore from starting between inspection
+  // and queued-file deletion.
+  try {
+    await assertNoIncompleteRestoreState(root);
+  } catch (error) {
+    await operationLock?.release();
+    throw error;
   }
 
   const client = new Client({ connectionString: databaseUrl.toString() });

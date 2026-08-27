@@ -156,11 +156,16 @@ function validOwner(value) {
 }
 
 function validLease(value, filenameKind, filenameToken) {
+  const validNesting =
+    value?.nested === false ||
+    (value?.nested === true &&
+      isCanonicalUuid(value.parentToken) &&
+      KINDS.has(value.requestedKind));
   return Boolean(
     validOwner(value) &&
       value.kind === filenameKind &&
       value.token === filenameToken &&
-      value.nested === false,
+      validNesting,
   );
 }
 
@@ -373,29 +378,26 @@ function conflictsWith(kind, activeLease) {
   return activeLease.kind === "doctor" || activeLease.kind === "restore";
 }
 
-function nestedLease(kind, parentToken) {
-  let released = false;
-  return {
-    token: parentToken,
-    kind,
-    nested: true,
-    async release() {
-      released = true;
-      return released;
-    },
-  };
-}
-
-function physicalLease(kind, token, paths, processStart) {
-  const leasePath = path.join(paths.leaseDirectory, `${kind}-${token}.json`);
+function physicalLease({
+  requestedKind,
+  leaseKind,
+  token,
+  paths,
+  processStart,
+  nested = false,
+  parentToken,
+}) {
+  const leasePath = path.join(paths.leaseDirectory, `${leaseKind}-${token}.json`);
   let released = false;
   return {
     token,
-    kind,
-    nested: false,
+    kind: requestedKind,
+    effectiveKind: leaseKind,
+    nested,
+    ...(parentToken ? { parentToken } : {}),
     async release() {
       if (released) return;
-      const guard = await acquireGuard(paths, kind);
+      const guard = await acquireGuard(paths, leaseKind);
       try {
         const fileStat = await lstatOrNull(leasePath);
         if (!fileStat) {
@@ -407,7 +409,11 @@ function physicalLease(kind, token, paths, processStart) {
         }
         const current = parseJsonObject(await readFile(leasePath, "utf8"));
         if (
-          !validLease(current, kind, token) ||
+          !validLease(current, leaseKind, token) ||
+          current.nested !== nested ||
+          (nested &&
+            (current.parentToken !== parentToken ||
+              current.requestedKind !== requestedKind)) ||
           current.pid !== process.pid ||
           current.processStart !== processStart
         ) {
@@ -435,9 +441,9 @@ export async function acquireOperationLock(kind, options = {}) {
     }
   }
   const parentToken = options.parentToken;
-  if (parentToken !== undefined && kind !== "backup" && kind !== "runtime") {
+  if (parentToken !== undefined && kind === "restore") {
     throw new TypeError(
-      "parentToken은 중첩 백업과 중첩 앱 실행에만 사용할 수 있어요.",
+      "parentToken으로 새 복원 작업을 시작할 수 없어요.",
     );
   }
 
@@ -447,10 +453,16 @@ export async function acquireOperationLock(kind, options = {}) {
   try {
     const active = await readActiveLeases(paths);
     if (parentToken !== undefined) {
-      const parentKind = kind === "runtime" ? "runtime" : "restore";
+      const allowedParentKinds =
+        kind === "runtime"
+          ? new Set(["runtime"])
+          : kind === "backup"
+            ? new Set(["restore"])
+            : KINDS;
       const parent = isCanonicalUuid(parentToken)
         ? active.find(
-            (lease) => lease.kind === parentKind && lease.token === parentToken,
+            (lease) =>
+              allowedParentKinds.has(lease.kind) && lease.token === parentToken,
           )
         : undefined;
       if (!parent) {
@@ -459,10 +471,38 @@ export async function acquireOperationLock(kind, options = {}) {
           active.map((lease) => lease.kind),
           kind === "runtime"
             ? "중첩 앱 실행의 공유 작업 토큰을 확인할 수 없어요."
-            : "중첩 백업의 복원 작업 토큰을 확인할 수 없어요.",
+            : kind === "backup"
+              ? "중첩 백업의 복원 작업 토큰을 확인할 수 없어요."
+              : "중첩 명령의 부모 작업 토큰을 확인할 수 없어요.",
         );
       }
-      return nestedLease(kind, parentToken);
+      const token = randomUUID();
+      const processStart = await ownProcessStart();
+      const leaseKind = parent.kind;
+      const leasePath = path.join(
+        paths.leaseDirectory,
+        `${leaseKind}-${token}.json`,
+      );
+      await writePrivateJson(leasePath, {
+        version: 1,
+        token,
+        kind: leaseKind,
+        nested: true,
+        parentToken,
+        requestedKind: kind,
+        pid: process.pid,
+        processStart,
+        createdAt: new Date().toISOString(),
+      });
+      return physicalLease({
+        requestedKind: kind,
+        leaseKind,
+        token,
+        paths,
+        processStart,
+        nested: true,
+        parentToken,
+      });
     }
 
     const conflicts = active.filter((lease) => conflictsWith(kind, lease));
@@ -485,7 +525,13 @@ export async function acquireOperationLock(kind, options = {}) {
       processStart,
       createdAt: new Date().toISOString(),
     });
-    return physicalLease(kind, token, paths, processStart);
+    return physicalLease({
+      requestedKind: kind,
+      leaseKind: kind,
+      token,
+      paths,
+      processStart,
+    });
   } finally {
     await releaseGuard(paths, guard);
   }

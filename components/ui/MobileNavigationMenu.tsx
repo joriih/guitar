@@ -11,6 +11,11 @@ export function MobileNavigationMenu({ children }: { children: ReactNode }) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  function closeAndRestoreFocus() {
+    setOpen(false);
+    window.requestAnimationFrame(() => triggerRef.current?.focus());
+  }
+
   useEffect(() => {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
@@ -20,8 +25,7 @@ export function MobileNavigationMenu({ children }: { children: ReactNode }) {
 
     function handleKeydown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setOpen(false);
-        triggerRef.current?.focus();
+        closeAndRestoreFocus();
         return;
       }
       if (event.key !== "Tab") return;
@@ -70,7 +74,7 @@ export function MobileNavigationMenu({ children }: { children: ReactNode }) {
           <button
             className={styles.mobileMenuBackdrop}
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={closeAndRestoreFocus}
             aria-label="메뉴 바깥 영역 닫기"
             tabIndex={-1}
           />

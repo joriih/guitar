@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node's type-stripping test runner requires the .ts extension.
-import { degreeName, formatMusicXmlChordSymbol, getCapoMappings, getFretPositionWindows, getMatchingCapoShapes, getNoteIndex, getPatternDegreeName, getPatternIntervals, getPatternNotes, modulo12, musicXmlPitchToNoteName, noteName, resolveMusicXmlChordKind, transposeNote } from "./music-theory.ts";
+import { degreeName, formatMusicXmlChordSymbol, getCapoMappings, getFretPositionWindows, getMatchingCapoShapes, getMusicXmlChordNotes, getNoteIndex, getPatternDegreeName, getPatternIntervals, getPatternNotes, modulo12, musicXmlPitchToNoteName, noteName, resolveMusicXmlChordKind, transposeNote } from "./music-theory.ts";
 
 test("note helpers normalize octaves and enharmonic names", () => {
   assert.equal(modulo12(-1), 11);
@@ -55,6 +55,14 @@ test("MusicXML accidentals and slash bass symbols stay readable", () => {
     bassStep: "E",
     bassAlter: -1,
   }), "B♭m7/E♭");
+  assert.deepEqual(
+    getMusicXmlChordNotes("C", -1, "Major 7th"),
+    ["Cb", "Eb", "Gb", "Bb"],
+  );
+  assert.deepEqual(
+    getMusicXmlChordNotes("B", 1, "Dominant 7th"),
+    ["B#", "D##", "F##", "A#"],
+  );
 });
 
 test("fret windows cover the requested fretboard without claiming fingering shapes", () => {

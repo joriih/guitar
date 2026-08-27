@@ -180,6 +180,7 @@ export function TopBar({
       ) : null}
 
       <TopBarSearch
+        key={`${searchAction}:${searchDefaultValue ?? ""}`}
         action={searchAction}
         defaultValue={searchDefaultValue}
         placeholder={searchPlaceholder}

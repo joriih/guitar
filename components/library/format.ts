@@ -1,6 +1,11 @@
 import type { RecentRiffSummary } from "@/components/ui";
 import type { Riff } from "@/types/domain";
 
+const SHORT_DATE_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
+  month: "short",
+  day: "numeric",
+});
+
 export function relativeDate(value: string): string {
   const elapsed = Date.now() - new Date(value).getTime();
   const minutes = Math.max(0, Math.round(elapsed / 60_000));
@@ -11,10 +16,7 @@ export function relativeDate(value: string): string {
   const days = Math.round(hours / 24);
   if (days === 1) return "어제";
   if (days < 14) return `${days}일 전`;
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(value));
+  return SHORT_DATE_FORMATTER.format(new Date(value));
 }
 
 export function riffSummary(

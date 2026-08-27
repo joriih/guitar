@@ -76,3 +76,37 @@ test("album cover picker keeps a larger catalog compact at phone widths", async 
     /@media \(max-width: 340px\)[\s\S]*?\.options\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/s,
   );
 });
+
+test("server refreshes replace stale riff row and tag editor client state", async () => {
+  const [home, riffPage, rowActions] = await Promise.all([
+    readFile(path.join(directory, "..", "ui", "HomeContent.tsx"), "utf8"),
+    readFile(
+      path.join(directory, "..", "..", "app", "riffs", "[riffId]", "page.tsx"),
+      "utf8",
+    ),
+    source("RiffRowActions.tsx"),
+  ]);
+
+  assert.match(home, /key=\{`\$\{riff\.id\}:\$\{riff\.revision\}`\}/);
+  assert.match(
+    riffPage,
+    /key=\{JSON\.stringify\(riff\.tags\.map\(\(\{ id, name \}\) => \[id, name\]\)\)\}/,
+  );
+  assert.doesNotMatch(rowActions, /revisionRef\.current = initialRevision/);
+});
+
+test("home summary counts unfiled riffs instead of only summing album cards", async () => {
+  const [page, content] = await Promise.all([
+    readFile(new URL("../../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../ui/HomeContent.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(page, /countRiffs\(riffFilters\)/);
+  assert.match(page, /totalRiffCount=\{filteredRiffCount\}/);
+  assert.match(
+    content,
+    /totalRiffCount \?\? albums\.reduce\(\(total, album\) => total \+ album\.riffCount, 0\)/,
+  );
+  assert.match(page, /import \{ relativeDate \} from "@\/components\/library\/format"/);
+  assert.doesNotMatch(page, /new Intl\.DateTimeFormat/);
+});

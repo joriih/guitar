@@ -18,6 +18,7 @@ export function TopBarSearch({ action, defaultValue, placeholder }: TopBarSearch
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        if (document.querySelector('[aria-modal="true"]')) return;
         event.preventDefault();
         inputRef.current?.focus();
         inputRef.current?.select();
